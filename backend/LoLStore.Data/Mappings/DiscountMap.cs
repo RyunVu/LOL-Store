@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using LoLStore.Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LoLStore.Data.Mappings;
 
@@ -10,37 +10,56 @@ public class DiscountMap : IEntityTypeConfiguration<Discount>
     {
         builder.ToTable("Discounts");
 
+        // Primary key
         builder.HasKey(d => d.Id);
 
-        builder.Property(d => d.Quantity)
-			.IsRequired()
-			.HasDefaultValue(0);
+        // Code
+        builder.Property(d => d.Code)
+            .IsRequired()
+            .HasMaxLength(128);
 
-		builder.Property(d => d.MinPrice)
-			.HasDefaultValue(0);
+		// DiscountValue (amount or percentage)
+		builder.Property(d => d.DiscountValue)
+			.IsRequired();
 
-		builder.Property(d => d.CreateDate)
-			.IsRequired()
-			.HasColumnType("datetime");
+        // IsPercentage
+        builder.Property(d => d.IsPercentage)
+            .IsRequired()
+            .HasDefaultValue(false);
 
-		builder.Property(d => d.ExpiryDate)
-			.IsRequired()
-			.HasColumnType("datetime");
+        // MinimumOrderAmount (nullable)
+        builder.Property(d => d.MinimunOrderAmount)
+            .HasPrecision(18, 2);
 
-		builder.Property(d => d.Code)
-			.IsRequired()
-			.HasMaxLength(128);
+        // MaxUses (nullable)
+        builder.Property(d => d.MaxUses)
+            .HasDefaultValue(null);
 
-		builder.Property(d => d.DiscountAmount)
-			.IsRequired()
-			.HasDefaultValue(0);
+        // TimesUsed
+        builder.Property(d => d.TimesUsed)
+            .IsRequired()
+            .HasDefaultValue(0);
 
-		builder.Property(d => d.Active)
-			.IsRequired()
-			.HasDefaultValue(false);
+        // Dates
+        builder.Property(d => d.StartDate)
+            .IsRequired()
+            .HasColumnType("datetime2");
 
-		builder.Property(d => d.IsDiscountPercentage)
-			.IsRequired()
-			.HasDefaultValue(false);
+        builder.Property(d => d.EndDate)
+            .IsRequired()
+            .HasColumnType("datetime2");
+
+        builder.Property(d => d.CreatedAt)
+            .IsRequired()
+            .HasColumnType("datetime2");
+
+        // IsActive
+        builder.Property(d => d.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
+
+        // Optional: add index for faster lookup by Code
+        builder.HasIndex(d => d.Code)
+            .IsUnique();
     }
 }

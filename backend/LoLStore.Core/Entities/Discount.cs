@@ -6,17 +6,15 @@ namespace LoLStore.Core.Entities;
 public class Discount : IEntity
 {
     public Guid Id { get; set; }
-    public int Quantity { get; set; }
-    public float MinPrice { get; set; }
-    public DateTime CreateDate { get; set; }
-
-	public DateTime ExpiryDate { get; set; }
-
 	public string Code { get; set; }
+	public float DiscountValue { get; set; }
+	public bool IsPercentage { get; set; }
+	public int? MinimunOrderAmount  { get; set; }
+    public int? MaxUses { get; set; }
+    public int TimesUsed { get; set; }
+    public DateTime StartDate { get; set; } = DateTime.UtcNow;
+	public DateTime EndDate { get; set; }
+	public bool IsActive { get; set; }
+	public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-	public float DiscountAmount { get; set; }
-
-	public bool Active { get; set; }
-
-	public bool IsDiscountPercentage { get; set; }
 }
