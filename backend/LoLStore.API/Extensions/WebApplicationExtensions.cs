@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text;
 using LoLStore.API.Media;
 using LoLStore.API.Middlewares;
+using LoLStore.Core.Collections;
 using LoLStore.Data.Contexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
