@@ -2,8 +2,8 @@ using System.Reflection;
 using System.Text;
 using LoLStore.API.Media;
 using LoLStore.API.Middlewares;
-using LoLStore.Core.Collections;
 using LoLStore.Data.Contexts;
+using LoLStore.Services.Shop;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -26,23 +26,21 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<IDataSeeder, DataSeeder>();
         builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
+        builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+
         return builder;
     }
 
     public static WebApplicationBuilder ConfigureCors(this WebApplicationBuilder builder)
     {
-        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-
-        builder.Services.AddCors(options =>
-        {
-            options.AddPolicy("LoLStoreApp", policy =>
-                policy.WithOrigins(allowedOrigins)
-                      .AllowAnyHeader()
-                      .AllowAnyMethod()
-                      .AllowCredentials());
-        });
-
-        return builder;
+        builder.Services.AddCors(option =>
+			option.AddPolicy("StoreApp", policyBuilder =>
+				policyBuilder
+					.WithOrigins(builder.Configuration["AllowLocalHost"] ?? "")
+					.AllowCredentials()
+					.AllowAnyHeader()
+					.AllowAnyMethod()));
+		return builder;
     }
 
     public static WebApplicationBuilder ConfigureAuthenticationAndAuthorization(this WebApplicationBuilder builder)
@@ -121,8 +119,10 @@ public static class WebApplicationExtensions
     
      public static WebApplicationBuilder ConfigureNLog(this WebApplicationBuilder builder)
     {
-        builder.Logging.ClearProviders();
-        builder.Host.UseNLog();
+        builder.Host.UseNLog(new NLogAspNetCoreOptions{
+           RemoveLoggerFactoryFilter = true 
+        });        
+        builder.Logging.SetMinimumLevel(LogLevel.Trace);
         return builder;
     }
     public static async Task<IApplicationBuilder> UseDataSeederAsync(this IApplicationBuilder app)
@@ -140,6 +140,14 @@ public static class WebApplicationExtensions
         }
 
         return app;
+    }
+
+    public static WebApplicationBuilder ConfigureSwaggerOpenApi(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
+
+        return builder;
     }
 
     public static WebApplication SetupContext(this WebApplication app)
@@ -173,7 +181,11 @@ public static class WebApplicationExtensions
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "LoL Store API v1");
+            c.RoutePrefix = string.Empty; // <-- maps Swagger UI to root /
+        });
         }
 
         app.UseCors("LoLStoreApp");

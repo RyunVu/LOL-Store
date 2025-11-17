@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LoLStore.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9930d600812c3483d7427e04434460ac40213cbf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a52c8fff3de3b89f8bb8a5b576e43703e024dcfe")]
 [assembly: System.Reflection.AssemblyProductAttribute("LoLStore.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LoLStore.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

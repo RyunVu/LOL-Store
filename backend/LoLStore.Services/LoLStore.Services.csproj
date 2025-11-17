@@ -5,6 +5,11 @@
     <ProjectReference Include="..\LoLStore.Data\LoLStore.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Slugify.Core" Version="5.1.1" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.10" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

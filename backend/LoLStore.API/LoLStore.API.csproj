@@ -28,4 +28,10 @@
     <ProjectReference Include="..\LoLStore.Services\LoLStore.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="node_modules\**" />
+    <Content Remove="node_modules\**" />
+    <None Remove="node_modules\**" />
+  </ItemGroup>
+
 </Project>
