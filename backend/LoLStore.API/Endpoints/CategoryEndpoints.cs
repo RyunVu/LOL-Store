@@ -30,8 +30,22 @@ public static class CategoryEndpoints
             .Produces<ApiResponse<IPagedList<CategoryDto>>>();
 
         builder.MapGet("/{id:guid}", GetCategoryById)
-        .WithName("GetCategoryById")
-        .Produces<ApiResponse<CategoryDto>>();
+            .WithName("GetCategoryById")
+            .Produces<ApiResponse<CategoryDto>>();
+
+        builder.MapGet("/slug/{slug:regex(^[a-z0-9_-]+$)}", GetCategoryBySlug)
+            .WithName("GetCategoryBySlug")
+            .Produces<ApiResponse<CategoryDto>>();
+
+        builder.MapGet("/RelatedCategories", GetRelatedCategories)
+            .WithName("GetRelatedCategories")
+            .Produces<ApiResponse<IList<CategoryDto>>>();
+
+        builder.MapGet("/toggleShowOnMenu/{id:guid}", ToggleShowOnMenu)
+            .WithName("ToggleCategoryShowOnMenu")
+            // .RequireAuthorization("RequireManagerRole")
+            .Produces(204)
+            .Produces(404);
 
         #endregion
 
@@ -140,6 +154,64 @@ public static class CategoryEndpoints
             return category == null
                 ? Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "Category not exist"))
                 : Results.Ok(ApiResponse.Success(categoryItem));
+        }
+        catch (Exception e)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+        }
+    }
+
+    private static async Task<IResult> GetCategoryBySlug(
+        [FromRoute] string slug,
+        [FromServices] ICategoryRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        try
+        {
+            var category = await repository.GetCategoryBySlugAsync(slug, true);
+            var categoryItem = mapper.Map<CategoryDto>(category);
+
+            return category == null
+                ? Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "Category is hidden or is not existed."))
+                : Results.Ok(ApiResponse.Success(categoryItem));
+        }
+        catch (Exception e)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+        }    
+    }
+
+    private static async Task<IResult> GetRelatedCategories(
+        [AsParameters] CategoryRelateModel model,
+        [FromServices] ICategoryRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        try
+        {
+            var condition = mapper.Map<CategoryQuery>(model);
+
+            var categoryItems = await repository.GetRelatedCategoriesBySlugAsync(condition);
+
+            var categoriesDto = mapper.Map<IList<CategoryDto>>(categoryItems); 
+
+            return Results.Ok(ApiResponse.Success(categoriesDto));
+        }
+        catch (Exception e)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+        }
+    }
+    
+    private static async Task<IResult> ToggleShowOnMenu(
+        [FromRoute] Guid id,
+        [FromServices] ICategoryRepository repository)
+    {
+        try
+        {
+            if (await repository.ToggleShowOnMenuAsync(id).ConfigureAwait(false))
+                return Results.Ok(ApiResponse.Success("Toggle state successfully.", HttpStatusCode.NoContent));
+            
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "Category not exist"));
         }
         catch (Exception e)
         {
