@@ -14,6 +14,9 @@ public class PasswordHasher : IPasswordHasher
         if (string.IsNullOrWhiteSpace(password))
             throw new ArgumentException("Password cannot be null or empty.", nameof(password));
 
+        if (password.Length > 256)
+            throw new ArgumentException("Password too long.");
+
         var salt = RandomNumberGenerator.GetBytes(SaltSize);
         var hash = Rfc2898DeriveBytes.Pbkdf2(
             Encoding.UTF8.GetBytes(password),
@@ -40,7 +43,8 @@ public class PasswordHasher : IPasswordHasher
         if (parts.Length != 3)
             throw new FormatException("Unexpected hashed password format.");
 
-        var iterations = int.Parse(parts[0]);
+        if (!int.TryParse(parts[0], out var iterations))
+            throw new FormatException("Invalid iteration count in hashed password.");
         var salt = Convert.FromBase64String(parts[1]);
         var storedHash = Convert.FromBase64String(parts[2]);
 

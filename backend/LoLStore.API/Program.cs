@@ -25,6 +25,9 @@ app.SetupContext()
     .SetupRequestPipeline()
 
     // Config endpoints 
-    .MapCategoriesEndpoint();
+    .MapCategoriesEndpoint()
+    .MapAccountEndpoints();
+    
+    
 
 app.Run();

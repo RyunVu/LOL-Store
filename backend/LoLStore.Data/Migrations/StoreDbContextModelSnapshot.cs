@@ -510,7 +510,7 @@ namespace LoLStore.Data.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Username")
+                    b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
@@ -520,23 +520,31 @@ namespace LoLStore.Data.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("LoLStore.Core.Entities.UserLogin", b =>
+            modelBuilder.Entity("LoLStore.Core.Entities.UserRefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("TokenCreated")
+                    b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("TokenExpires")
+                    b.Property<DateTime>("Expires")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserLogins");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserRefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("RoleUser", b =>
@@ -675,11 +683,11 @@ namespace LoLStore.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("LoLStore.Core.Entities.UserLogin", b =>
+            modelBuilder.Entity("LoLStore.Core.Entities.UserRefreshToken", b =>
                 {
                     b.HasOne("LoLStore.Core.Entities.User", "User")
-                        .WithOne("UserLogin")
-                        .HasForeignKey("LoLStore.Core.Entities.UserLogin", "Id")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -733,7 +741,7 @@ namespace LoLStore.Data.Migrations
 
                     b.Navigation("ProductHistories");
 
-                    b.Navigation("UserLogin");
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

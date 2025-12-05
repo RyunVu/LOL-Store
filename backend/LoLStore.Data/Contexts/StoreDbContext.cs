@@ -18,7 +18,7 @@ public class StoreDbContext : DbContext
     public DbSet<Supplier> Suppliers { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Role> Roles { get; set; }
-    public DbSet<UserLogin> UserLogins { get; set; }
+    public DbSet<UserRefreshToken> UserRefreshTokens  { get; set; }
 
     public StoreDbContext(DbContextOptions<StoreDbContext> options) : base(options)
     {

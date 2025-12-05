@@ -21,7 +21,7 @@ public class AccountMap : IEntityTypeConfiguration<User>
 			.IsRequired()
 			.HasDefaultValue("");
 
-		builder.Property(s => s.Username)
+		builder.Property(s => s.UserName)
 			.IsRequired()
 			.HasMaxLength(128);
 
@@ -33,10 +33,10 @@ public class AccountMap : IEntityTypeConfiguration<User>
 			.WithMany(s => s.Users)
 			.UsingEntity(pt => pt.ToTable("UserInRoles"));
 
-		builder
-			.HasOne(u => u.UserLogin)
-			.WithOne(ul => ul.User)
-			.HasForeignKey<UserLogin>(ul => ul.Id);
+		builder.HasMany(u => u.RefreshTokens)
+            .WithOne(rt => rt.User)
+            .HasForeignKey(rt => rt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 	}
 }
 
@@ -52,4 +52,29 @@ public class RoleMap : IEntityTypeConfiguration<Role>
 			.IsRequired()
 			.HasMaxLength(128);
 	}
+}
+
+public class UserRefreshTokenMap : IEntityTypeConfiguration<UserRefreshToken>
+{
+    public void Configure(EntityTypeBuilder<UserRefreshToken> builder)
+    {
+        builder.ToTable("UserRefreshTokens");
+
+        builder.HasKey(t => t.Id);
+
+        builder.Property(t => t.Token)
+            .IsRequired()
+            .HasMaxLength(512); // Avoid NVARCHAR(MAX)
+
+        builder.Property(t => t.Created)
+            .IsRequired();
+
+        builder.Property(t => t.Expires)
+            .IsRequired();
+
+        // FK mapping is already handled in UserMap
+        builder.HasOne(t => t.User)
+            .WithMany(u => u.RefreshTokens)
+            .HasForeignKey(t => t.UserId);
+    }
 }

@@ -27,6 +27,7 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
         builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+        builder.Services.AddScoped<IUserRepository, UserRepository>();
 
         return builder;
     }
