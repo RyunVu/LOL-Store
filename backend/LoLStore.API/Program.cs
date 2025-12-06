@@ -2,6 +2,7 @@ using LoLStore.API.Extensions;
 using LoLStore.API.Mapsters;
 using LoLStore.API.Endpoints;
 using LoLStore.API.Validations;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,23 +12,16 @@ builder
     .ConfigureServices()
     .ConfigureSwaggerOpenApi()
     .ConfigureMapster()
-    .ConfigureFluentValidation();
-
+    .ConfigureFluentValidation(); 
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// await app.UseDataSeederAsync();
-
 app.SetupContext()
     .SetupMiddleware()
     .SetupRequestPipeline()
-
-    // Config endpoints 
     .MapCategoriesEndpoint()
     .MapAccountEndpoints();
-    
-    
 
 app.Run();

@@ -86,7 +86,8 @@ public class UserRepository : IUserRepository
     {
         if (await _context.Users.AnyAsync(u => u.UserName == user.UserName, cancellationToken))
             return null;
-
+        user.Id = Guid.NewGuid();
+        user.Name = user.Name ?? user.UserName;  
         user.CreatedDate = DateTime.UtcNow;
         user.Password = _hasher.HashPassword(user.Password);
 

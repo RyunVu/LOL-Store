@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using LoLStore.API.Filter;
 using LoLStore.API.Identities;
 using LoLStore.API.Models;
 using LoLStore.API.Models.UserModel;
@@ -51,6 +52,11 @@ public static class UserEndpoints
             .WithName("LoginAsync")
             .AllowAnonymous()
             .Produces<ApiResponse<AccessTokenModel>>();
+
+        builder.MapPost("/register", Register)
+            .WithName("RegisterAsync")
+            .AddEndpointFilter<ValidatorFilter<RegisterModel>>()
+            .Produces<ApiResponse<UserDto>>();
 
         # endregion
         
@@ -194,4 +200,37 @@ public static class UserEndpoints
         }
     }
 
+    private static async Task<IResult> Register(
+        [FromBody] RegisterModel model,
+        [FromServices] IUserRepository repository,
+        [FromServices] IConfiguration configuration,
+        [FromServices] IMapper mapper)
+    {
+            try
+        {
+            // Check username BEFORE mapping to entity
+            var userExist = await repository.IsUserExistedAsync(model.UserName);
+            if (userExist)
+            {
+                return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Account already exists."));
+            }
+
+            // Now map to entity after verifying
+            var user = mapper.Map<User>(model);
+
+            // Create user
+            var newUser = await repository.RegisterAsync(user);
+            if (newUser == null)
+            {
+                return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to create user."));
+            }
+
+            var userDto = mapper.Map<UserDto>(newUser);
+            return Results.Ok(ApiResponse.Success(userDto));
+        }
+        catch (Exception e)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+        }
+    }
 }

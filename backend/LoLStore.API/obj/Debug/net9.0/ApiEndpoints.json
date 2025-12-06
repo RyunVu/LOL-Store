@@ -1,0 +1,427 @@
+[
+  {
+    "ContainingType": "LoLStore.API.Endpoints.UserEndpoints",
+    "Method": "Login",
+    "RelativePath": "api/account/login",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "LoLStore.API.Models.UserModel.UserLoginModel",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse\u00601[[LoLStore.API.Models.AccessTokenModel, LoLStore.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "LoginAsync"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.UserEndpoints",
+    "Method": "Logout",
+    "RelativePath": "api/account/logout",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "DeleteRefreshTokenAsync"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.UserEndpoints",
+    "Method": "RefreshToken",
+    "RelativePath": "api/account/refreshToken",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse\u00601[[LoLStore.API.Models.AccessTokenModel, LoLStore.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "RefreshToken"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.UserEndpoints",
+    "Method": "Register",
+    "RelativePath": "api/account/register",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "LoLStore.API.Models.RegisterModel",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse\u00601[[LoLStore.API.Models.UserModel.UserDto, LoLStore.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "RegisterAsync"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "GetCategories",
+    "RelativePath": "api/categories/",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "Keyword",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ShowOnMenu",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "PageSize",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "PageNumber",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "SortColumn",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "SortOrder",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse\u00601[[IPagedList\u00601[[LoLStore.API.Models.CategoryModel.CategoryDto, LoLStore.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], LoLStore.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetCategories"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "AddCategory",
+    "RelativePath": "api/categories/",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "LoLStore.API.Models.CategoryModel.CategoryEditModel",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 201
+      },
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 400
+      },
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 409
+      }
+    ],
+    "EndpointName": "AddCategory"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "GetCategoryById",
+    "RelativePath": "api/categories/{id:guid}",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse\u00601[[LoLStore.API.Models.CategoryModel.CategoryDto, LoLStore.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetCategoryById"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "UpdateCategory",
+    "RelativePath": "api/categories/{id:guid}",
+    "HttpMethod": "PUT",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "model",
+        "Type": "LoLStore.API.Models.CategoryModel.CategoryEditModel",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 204
+      },
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 400
+      },
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 409
+      }
+    ],
+    "EndpointName": "UpdateCategory"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "DeleteCategory",
+    "RelativePath": "api/categories/{id:guid}",
+    "HttpMethod": "DELETE",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 204
+      },
+      {
+        "Type": "LoLStore.API.Models.ApiResponse",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 404
+      }
+    ],
+    "EndpointName": "DeleteCategory"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "GetCategoriesByManager",
+    "RelativePath": "api/categories/byManager",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "Keyword",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ShowOnMenu",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "PageSize",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "PageNumber",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "SortColumn",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "SortOrder",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse\u00601[[IPagedList\u00601[[LoLStore.API.Models.CategoryModel.CategoryDto, LoLStore.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], LoLStore.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetCategoriesByManager"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "GetRelatedCategories",
+    "RelativePath": "api/categories/RelatedCategories",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "Keyword",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "UrlSlug",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse\u00601[[System.Collections.Generic.IList\u00601[[LoLStore.API.Models.CategoryModel.CategoryDto, LoLStore.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetRelatedCategories"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "GetCategoryBySlug",
+    "RelativePath": "api/categories/slug/{slug:regex(^[a-z0-9_-]\u002B$)}",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "slug",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "LoLStore.API.Models.ApiResponse\u00601[[LoLStore.API.Models.CategoryModel.CategoryDto, LoLStore.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetCategoryBySlug"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "SoftDeleteCategoryToggle",
+    "RelativePath": "api/categories/SoftDeleteToggle/{id:guid}",
+    "HttpMethod": "DELETE",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 204
+      },
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 404
+      }
+    ],
+    "EndpointName": "SoftDeleteCategoryToggle"
+  },
+  {
+    "ContainingType": "LoLStore.API.Endpoints.CategoryEndpoints",
+    "Method": "ToggleShowOnMenu",
+    "RelativePath": "api/categories/toggleShowOnMenu/{id:guid}",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 204
+      },
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 404
+      }
+    ],
+    "EndpointName": "ToggleCategoryShowOnMenu"
+  }
+]

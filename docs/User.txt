@@ -1,0 +1,20 @@
+📝 FULL FLOW CHART
+Login Flow
+Client → POST /login → Repository → Verify Password
+   → Generate JWT Token
+        → Generate Refresh Token
+            → Set Refresh Token Cookie (HttpOnly)
+                → Return JWT in JSON
+
+Authenticated Request Flow
+Client → GET /api/user
+   → Send JWT in Authorization header
+       → Middleware validates JWT
+       → Attach ClaimsPrincipal to HttpContext.User
+           → GetCurrentUser(context)
+
+Token Expired
+Client → POST /refresh-token
+   → Reads refreshToken cookie
+   → If valid: generate new JWT
+   → If invalid: force login again
