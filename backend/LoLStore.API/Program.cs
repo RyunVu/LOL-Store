@@ -2,7 +2,6 @@ using LoLStore.API.Extensions;
 using LoLStore.API.Mapsters;
 using LoLStore.API.Endpoints;
 using LoLStore.API.Validations;
-using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +24,7 @@ app.SetupContext()
     .SetupMiddleware()
     .SetupRequestPipeline()
     .MapCategoriesEndpoint()
-    .MapAccountEndpoints();
+    .MapAccountEndpoints()
+    .MapSupplierEndpoint();
 
 app.Run();

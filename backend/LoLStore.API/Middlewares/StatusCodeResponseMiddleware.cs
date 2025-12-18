@@ -15,36 +15,40 @@ public class StatusCodeResponseMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        context.Response.OnStarting(() =>
+        await _next(context);
+
+        if (context.Response.HasStarted)
+            return;
+
+        var statusCode = context.Response.StatusCode;
+
+        if (statusCode is StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden)
         {
-            var code = context.Response.StatusCode;
+            context.Response.Clear();
+            context.Response.ContentType = "application/json";
 
-            if (code == StatusCodes.Status401Unauthorized || code == StatusCodes.Status403Forbidden)
+            var apiResponse = statusCode switch
             {
-                context.Response.ContentType = "application/json";
+                StatusCodes.Status401Unauthorized =>
+                    ApiResponse.Fail(HttpStatusCode.Unauthorized, "Unauthorized"),
 
-                var apiRes = code switch
-                {
-                    StatusCodes.Status401Unauthorized => ApiResponse.Fail(HttpStatusCode.Unauthorized, "Unauthorized"),
-                    StatusCodes.Status403Forbidden    => ApiResponse.Fail(HttpStatusCode.Forbidden, "Forbidden"),
-                    _ => null
-                };
+                StatusCodes.Status403Forbidden =>
+                    ApiResponse.Fail(HttpStatusCode.Forbidden, "Forbidden"),
 
-                if (apiRes != null)
-                {
-                    var options = new JsonSerializerOptions
+                _ => null
+            };
+
+            if (apiResponse != null)
+            {
+                var json = JsonSerializer.Serialize(
+                    apiResponse,
+                    new JsonSerializerOptions
                     {
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                    };
+                    });
 
-                    var json = JsonSerializer.Serialize(apiRes, options);
-                    return context.Response.WriteAsync(json);
-                }
+                await context.Response.WriteAsync(json);
             }
-
-            return Task.CompletedTask;
-        });
-
-        await _next(context);
+        }
     }
 }

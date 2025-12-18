@@ -1,7 +1,4 @@
-using System.Data.Common;
-using System.Linq;
 using System.Linq.Dynamic.Core;
-using System.Runtime.Serialization;
 using LoLStore.Core.DTO;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;

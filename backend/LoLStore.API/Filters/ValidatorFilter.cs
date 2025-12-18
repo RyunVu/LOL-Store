@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Http;
 
 namespace LoLStore.API.Filter;
 
@@ -11,11 +12,13 @@ public class ValidatorFilter<T> : IEndpointFilter where T : class
         _validator = validator;
     }
 
-    public async ValueTask<object> InvokeAsync(
+    public async ValueTask<object?> InvokeAsync(
         EndpointFilterInvocationContext context,
         EndpointFilterDelegate next)
     {
-        if (context.Arguments[0] is not T model)
+        var model = context.Arguments.OfType<T>().FirstOrDefault();
+
+        if (model is null)
         {
             return Results.BadRequest("Invalid request model.");
         }
@@ -24,8 +27,11 @@ public class ValidatorFilter<T> : IEndpointFilter where T : class
 
         if (!validationResult.IsValid)
         {
-            var errors = validationResult.Errors
-                .Select(e => new { e.PropertyName, e.ErrorMessage });
+            var errors = validationResult.Errors.Select(e => new
+            {
+                e.PropertyName,
+                e.ErrorMessage
+            });
 
             return Results.BadRequest(errors);
         }
