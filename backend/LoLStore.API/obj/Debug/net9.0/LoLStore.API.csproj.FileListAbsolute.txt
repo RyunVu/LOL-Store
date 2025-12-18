@@ -73,14 +73,12 @@ D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Composit
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Composition.TypedParts.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Configuration.ConfigurationManager.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Drawing.Common.dll
-D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Formats.Asn1.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Linq.Dynamic.Core.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Memory.Data.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Runtime.Caching.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Security.Cryptography.ProtectedData.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Security.Permissions.dll
-D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Text.Json.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Windows.Extensions.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.resources.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.resources.dll
@@ -182,6 +180,7 @@ D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\staticwebassets
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\staticwebassets.build.json.cache
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\staticwebassets.development.json
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\staticwebassets.build.endpoints.json
+D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\swae.build.ex.cache
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\LoLStore.33E5E458.Up2Date
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\LoLStore.API.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\refint\LoLStore.API.dll

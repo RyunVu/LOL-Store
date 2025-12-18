@@ -2,5 +2,5 @@ namespace LoLStore.Core.Queries;
 
 public class UserQuery : IUserQuery
 {
-    public string Keyword {get;set;}
+    public string Keyword {get;set;} = "";
 }

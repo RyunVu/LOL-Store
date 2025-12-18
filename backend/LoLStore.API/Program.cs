@@ -10,13 +10,16 @@ builder
     .ConfigureCors()
     .ConfigureNLog()
     .ConfigureServices()
-    .ConfigureSwaggerOpenApi()
+    .ConfigureSwagger()
+    .ConfigureAuthenticationAndAuthorization()
     .ConfigureMapster()
     .ConfigureFluentValidation(); 
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+await app.UseDataSeederAsync(); 
 
 app.SetupContext()
     .SetupMiddleware()

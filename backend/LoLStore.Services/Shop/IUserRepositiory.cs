@@ -24,7 +24,7 @@ public interface IUserRepository
 
     Task<bool> IsUserExistedAsync(String userName, CancellationToken cancellationToken = default);
 
-    Task<User> SetUserRolesAsync (Guid userId, IList<Guid> roles, CancellationToken cancellationToken = default);
+    Task<User> UpdateUserRolesAsync (Guid userId, IList<Guid> roles, CancellationToken cancellationToken = default);
 
     Task<UserRefreshToken> SetRefreshTokenAsync(Guid userId, IRefreshToken refreshToken, CancellationToken cancellationToken = default);
 

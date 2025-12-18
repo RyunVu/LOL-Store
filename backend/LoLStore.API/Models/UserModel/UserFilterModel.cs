@@ -1,6 +1,6 @@
 namespace LoLStore.API.Models.UserModel;
 
-public class UserFilterModel
+public class UserFilterModel : PagingModel
 {
     public string Keyword {get;set;} = "";
 }

@@ -4,7 +4,6 @@ using LoLStore.Core.Queries;
 using LoLStore.Data.Contexts;
 using LoLStore.Services.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 
 namespace LoLStore.Services.Shop;
 
@@ -125,7 +124,7 @@ public class UserRepository : IUserRepository
             .ToListAsync(cancellationToken);
     }
     
-    public async Task<User> SetUserRolesAsync(Guid userId, IList<Guid> roles, CancellationToken cancellationToken = default)
+    public async Task<User> UpdateUserRolesAsync(Guid userId, IList<Guid> roles, CancellationToken cancellationToken = default)
     {
         var user = await _context.Set<User>()
             .Include(r => r.Roles)
@@ -226,8 +225,4 @@ public class UserRepository : IUserRepository
             .Include(s => s.Roles)
             .FirstOrDefaultAsync(s => s.Id == userLogin.UserId, cancellationToken);
     }
-
-
-
-
 }

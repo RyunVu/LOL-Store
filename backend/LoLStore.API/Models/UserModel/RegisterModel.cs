@@ -1,4 +1,4 @@
-namespace LoLStore.API.Models;
+namespace LoLStore.API.Models.UserModel;
 
 public class RegisterModel
 {
@@ -10,5 +10,5 @@ public class RegisterModel
 public class UserRolesEditModel
 {
     public Guid UserId { get; set; }
-    public IList<Guid> RolesId { get; set; }
+    public IList<Guid> RolesId { get; set; } = new List<Guid>();
 }

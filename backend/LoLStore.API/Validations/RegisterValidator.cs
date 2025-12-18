@@ -1,5 +1,5 @@
 using FluentValidation;
-using LoLStore.API.Models;
+using LoLStore.API.Models.UserModel;
 using System.Text.RegularExpressions;
 
 public class RegisterValidator : AbstractValidator<RegisterModel>

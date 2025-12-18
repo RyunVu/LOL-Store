@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using LoLStore.API.Media;
 using LoLStore.API.Middlewares;
@@ -21,7 +22,6 @@ public static class WebApplicationExtensions
         builder.Services.AddDbContext<StoreDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        // Scoped services
         builder.Services.AddScoped<IMediaManager, LocalFileSystemMediaManager>();
         builder.Services.AddScoped<IDataSeeder, DataSeeder>();
         builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -35,13 +35,13 @@ public static class WebApplicationExtensions
     public static WebApplicationBuilder ConfigureCors(this WebApplicationBuilder builder)
     {
         builder.Services.AddCors(option =>
-			option.AddPolicy("StoreApp", policyBuilder =>
-				policyBuilder
-					.WithOrigins(builder.Configuration["AllowLocalHost"] ?? "")
-					.AllowCredentials()
-					.AllowAnyHeader()
-					.AllowAnyMethod()));
-		return builder;
+            option.AddPolicy("LoLStoreApp", policyBuilder =>
+                policyBuilder
+                    .WithOrigins(builder.Configuration["AllowLocalHost"] ?? "")
+                    .AllowCredentials()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()));
+        return builder;
     }
 
     public static WebApplicationBuilder ConfigureAuthenticationAndAuthorization(this WebApplicationBuilder builder)
@@ -60,7 +60,8 @@ public static class WebApplicationExtensions
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+                    RoleClaimType = ClaimTypes.Role
                 };
             });
 
@@ -78,34 +79,35 @@ public static class WebApplicationExtensions
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "LoL Store API", Version = "v1" });
-
-            // JWT Bearer support
-            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            c.SwaggerDoc("v1", new OpenApiInfo
             {
-                Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+                Title = "LoL Store API",
+                Version = "v1"
+            });
+
+            var jwtSecurityScheme = new OpenApiSecurityScheme
+            {
+                Scheme = "bearer",
+                BearerFormat = "JWT",
                 Name = "Authorization",
                 In = ParameterLocation.Header,
-                Type = SecuritySchemeType.ApiKey,
-                Scheme = "Bearer",
-                BearerFormat = "JWT"
-            });
+                Type = SecuritySchemeType.Http,
+                Description = "Enter: Bearer {your JWT token}",
+
+                Reference = new OpenApiReference
+                {
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
+                }
+            };
+
+            c.AddSecurityDefinition("Bearer", jwtSecurityScheme);
+
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    },
-                    Array.Empty<string>()
-                }
+                { jwtSecurityScheme, Array.Empty<string>() }
             });
 
-            // Optional: include XML comments for better documentation
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             if (File.Exists(xmlPath))
@@ -114,25 +116,27 @@ public static class WebApplicationExtensions
             }
         });
 
+        return builder;
+    }
+
+    public static WebApplicationBuilder ConfigureNLog(this WebApplicationBuilder builder)
+    {
+        builder.Host.UseNLog(new NLogAspNetCoreOptions
+        {
+            RemoveLoggerFactoryFilter = true
+        });
+        builder.Logging.SetMinimumLevel(LogLevel.Trace);
 
         return builder;
     }
-    
-     public static WebApplicationBuilder ConfigureNLog(this WebApplicationBuilder builder)
-    {
-        builder.Host.UseNLog(new NLogAspNetCoreOptions{
-           RemoveLoggerFactoryFilter = true 
-        });        
-        builder.Logging.SetMinimumLevel(LogLevel.Trace);
-        return builder;
-    }
+
     public static async Task<IApplicationBuilder> UseDataSeederAsync(this IApplicationBuilder app)
     {
         using var scope = app.ApplicationServices.CreateScope();
         try
         {
             var seeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
-            await seeder.InitializeAsync(); 
+            await seeder.InitializeAsync();
         }
         catch (Exception ex)
         {
@@ -143,14 +147,6 @@ public static class WebApplicationExtensions
         return app;
     }
 
-    public static WebApplicationBuilder ConfigureSwaggerOpenApi(this WebApplicationBuilder builder)
-    {
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-
-        return builder;
-    }
-
     public static WebApplication SetupContext(this WebApplication app)
     {
         app.Use(async (context, next) =>
@@ -158,7 +154,7 @@ public static class WebApplicationExtensions
             context.Request.EnableBuffering();
 
             var length = context.Request.ContentLength;
-            if (length is > 0 and > 33_554_432) // ~32MB
+            if (length is > 0 and > 33_554_432)
             {
                 context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
                 await context.Response.WriteAsync("Request body too large");
@@ -183,14 +179,13 @@ public static class WebApplicationExtensions
         {
             app.UseSwagger();
             app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "LoL Store API v1");
-            c.RoutePrefix = string.Empty; // <-- maps Swagger UI to root /
-        });
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "LoL Store API v1");
+                c.RoutePrefix = string.Empty;
+            });
         }
 
         app.UseCors("LoLStoreApp");
-
         app.UseStaticFiles();
         app.UseHttpsRedirection();
 
@@ -199,5 +194,4 @@ public static class WebApplicationExtensions
 
         return app;
     }
-
 }

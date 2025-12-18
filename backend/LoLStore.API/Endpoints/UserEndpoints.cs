@@ -5,9 +5,11 @@ using LoLStore.API.Identities;
 using LoLStore.API.Models;
 using LoLStore.API.Models.UserModel;
 using LoLStore.Core.Entities;
+using LoLStore.Core.Queries;
 using LoLStore.Services.Shop;
-using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
+using MapsterMapper;
+using Mapster;
 
 namespace LoLStore.API.Endpoints;
 
@@ -28,17 +30,17 @@ public static class UserEndpoints
             .WithName("DeleteRefreshTokenAsync")
             .AllowAnonymous();
 
-        // builder.MapGet("/getUsers", GetUsers)
-        //     .WithName("GetUser")
-        //     .RequireAuthorization("RequireAdminRole")
-        //     .Produces<ApiResponse<PaginationResult<UserDto>>>();
+        builder.MapGet("/getUsers", GetUsers)
+            .WithName("GetUsers")
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<PaginationResult<UserDto>>>();
 
-        // builder.MapGet("/roles", GetRoles)
-        //     .WithName("GetRolesAsync")
-        //     .RequireAuthorization("RequireAdminRole")
-        //     .Produces<ApiResponse<IList<RoleDto>>>()
-        //     .Produces(StatusCodes.Status401Unauthorized)
-        //     .Produces(StatusCodes.Status403Forbidden);
+        builder.MapGet("/roles", GetRoles)
+            .WithName("GetRolesAsync")
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<IList<RoleDto>>>()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
         
         // builder.MapGet("/getProfile", GetProfile)
         //     .WithName("GetProfile")
@@ -61,7 +63,18 @@ public static class UserEndpoints
         # endregion
         
         # region Put Method
-        
+        builder.MapPut("/changePassword", ChangePassword)
+            .WithName("ChangePassword")
+            .AddEndpointFilter<ValidatorFilter<PasswordEditModel>>()
+            .Produces<ApiResponse<UserDto>>();
+
+        builder.MapPut("/updateUserRoles", UpdateUserRoles)
+            .WithName("UpdateUserRoles")
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<UserDto>>()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
+
         # endregion
 
         # region Delete Method
@@ -226,6 +239,111 @@ public static class UserEndpoints
             }
 
             var userDto = mapper.Map<UserDto>(newUser);
+            return Results.Ok(ApiResponse.Success(userDto));
+        }
+        catch (Exception e)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+        }
+    }
+
+    private static async Task<IResult> GetUsers(
+        [AsParameters] UserFilterModel model,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        try
+        {
+            var userQuery = mapper.Map<UserQuery>(model);
+
+            var userList = await repository.GetPagedUsersAsync(
+                userQuery,
+                model,
+                p => p.ProjectToType<UserDto>());
+
+            return Results.Ok(ApiResponse.Success(userList));
+        }
+        catch (Exception e)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+        }   
+    }
+
+    private static async Task<IResult> GetRoles(
+        [FromServices] IUserRepository userRepository,
+        [FromServices] IMapper mapper
+    )
+    {
+        try
+        {
+            var roles = await userRepository.GetRolesAsync();
+            var listRoles = mapper.Map<IList<RoleDto>>(roles);
+
+            return Results.Ok(ApiResponse.Success(listRoles));
+        }
+        catch (Exception e)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+        }   
+    }
+
+    private static async Task<IResult> ChangePassword(
+        [FromBody] PasswordEditModel model,
+        HttpContext context,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        try
+        {
+            // Check for authenticated user
+            var identity = context.GetCurrentUser();
+            if (identity == null)
+            {
+                return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "User not authenticated.")
+                );
+            }
+
+            // Get user from database
+            var user = await repository.GetUserByIdAsync(identity.Id);
+            if (user == null)
+            {
+                return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+            }
+
+            // Change password
+            if (await repository.ChangePasswordAsync(user, model.OldPassword, model.NewPassword))
+            {
+                var userDto = mapper.Map<UserDto>(user);
+                return Results.Ok(ApiResponse.Success(userDto));
+            }
+
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to change password. Old password may be incorrect."));
+        }
+        catch (Exception e)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+        }
+    }
+
+    private static async Task<IResult> UpdateUserRoles(
+        UserRolesEditModel model,
+        [FromServices] IUserRepository repository,
+        [FromServices] IConfiguration configuration,
+        [FromServices] IMapper mapper)
+    {
+        try
+        {
+            var user = await repository.GetUserByIdAsync(model.UserId, getFull: true);
+            if (user == null)
+            {
+                return Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.NotFound,
+                    "User not found."
+                ));
+            }
+
+            var updatedUser = await repository.UpdateUserRolesAsync(user.Id, model.RolesId);
+            var userDto = mapper.Map<UserDto>(updatedUser);
             return Results.Ok(ApiResponse.Success(userDto));
         }
         catch (Exception e)

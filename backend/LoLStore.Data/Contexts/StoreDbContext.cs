@@ -29,7 +29,7 @@ public class StoreDbContext : DbContext
         public StoreDbContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<StoreDbContext>();
-            optionsBuilder.UseSqlServer("Server=(local);Database=LoLStore;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True");
+            optionsBuilder.UseSqlServer("Server=.\\SQLEXPRESS;Database=LoLStore;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True");
 
             return new StoreDbContext(optionsBuilder.Options);
         }
