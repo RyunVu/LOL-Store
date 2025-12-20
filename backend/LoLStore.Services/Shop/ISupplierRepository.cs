@@ -6,12 +6,12 @@ namespace LoLStore.Services.Shop;
 public interface ISupplierRepository
 {
     Task<IPagedList<T>> GetPagedSuppliersAsync<T>(
-        ISupplierQuery query,
+        SupplierQuery query,
         IPagingParams pagingParams,
         Func<IQueryable<Supplier>, IQueryable<T>> mapper,
         CancellationToken cancellationToken = default);
 
-    Task<Supplier> GetSupplierByIdAsync(
+    Task<Supplier?> GetSupplierByIdAsync(
         Guid supplierId,
         CancellationToken cancellationToken = default);
 

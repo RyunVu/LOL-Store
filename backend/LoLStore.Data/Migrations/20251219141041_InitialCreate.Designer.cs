@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoLStore.Data.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    [Migration("20251205062555_AddUserRefreshTokens")]
-    partial class AddUserRefreshTokens
+    [Migration("20251219141041_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -46,14 +46,23 @@ namespace LoLStore.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
+
+                    b.Property<string>("MetaDescription")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -64,6 +73,9 @@ namespace LoLStore.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UrlSlug")
                         .IsRequired()
@@ -323,10 +335,10 @@ namespace LoLStore.Data.Migrations
                         .HasColumnType("nvarchar(2048)")
                         .HasDefaultValue("");
 
-                    b.Property<float>("Discount")
+                    b.Property<decimal>("Discount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("real")
-                        .HasDefaultValue(0f);
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -344,10 +356,10 @@ namespace LoLStore.Data.Migrations
                         .HasColumnType("nvarchar(2048)")
                         .HasDefaultValue("");
 
-                    b.Property<double>("Price")
+                    b.Property<decimal>("Price")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("float")
-                        .HasDefaultValue(0.0);
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<int>("Quantity")
                         .ValueGeneratedOnAdd()
@@ -440,6 +452,7 @@ namespace LoLStore.Data.Migrations
                         .HasDefaultValue("");
 
                     b.Property<string>("ContactEmail")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ContactName")

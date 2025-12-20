@@ -5,6 +5,10 @@ namespace LoLStore.Core.Entities;
 public class Role : IEntity
 {
     public Guid Id { get; set; }
-    public string Name { get; set; }
-    public IList<User> Users { get; set; }
+    
+    // Required field
+    public string Name { get; set; } = string.Empty;
+    
+    // Navigation property
+    public IList<User> Users { get; set; } = new List<User>();
 }

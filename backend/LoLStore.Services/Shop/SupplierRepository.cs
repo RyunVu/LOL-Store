@@ -15,19 +15,19 @@ public class SupplierRepository : ISupplierRepository
         _context = context;
     }
 
-    public Task<IPagedList<T>> GetPagedSuppliersAsync<T>(ISupplierQuery query, IPagingParams pagingParams, Func<IQueryable<Supplier>, IQueryable<T>> mapper, CancellationToken cancellationToken = default)
+    public Task<IPagedList<T>> GetPagedSuppliersAsync<T>(SupplierQuery query, IPagingParams pagingParams, Func<IQueryable<Supplier>, IQueryable<T>> mapper, CancellationToken cancellationToken = default)
     {
         var suppliers = _context.Suppliers.AsQueryable();
 
         suppliers = suppliers
-            .WhereIf(query.IsDeleted, s => s.IsDeleted)
-            .WhereIf(!query.IsDeleted, s => !s.IsDeleted)
+            .WhereIf(query.IsDeleted.HasValue, 
+                s => s.IsDeleted == query.IsDeleted)
             .WhereIf(!string.IsNullOrWhiteSpace(query.Keyword), s =>
-                s.Name.Contains(query.Keyword) ||
-                s.ContactName.Contains(query.Keyword) ||
-                s.Email.Contains(query.Keyword) ||
-                s.ContactEmail.Contains(query.Keyword) ||
-                s.Phone.Contains(query.Keyword));
+                s.Name.Contains(query.Keyword!) ||
+                s.ContactName.Contains(query.Keyword!) ||
+                s.Email.Contains(query.Keyword!) ||
+                s.ContactEmail.Contains(query.Keyword!) ||
+                s.Phone.Contains(query.Keyword!));
 
         var mappedSuppliers = mapper(suppliers);
 
@@ -46,7 +46,7 @@ public class SupplierRepository : ISupplierRepository
     }
 
 
-    public async Task<Supplier> GetSupplierByIdAsync(Guid supplierId, CancellationToken cancellationToken = default)
+    public async Task<Supplier?> GetSupplierByIdAsync(Guid supplierId, CancellationToken cancellationToken = default)
     {
         return await _context.Set<Supplier>()
             .FirstOrDefaultAsync(s => s.Id == supplierId, cancellationToken);

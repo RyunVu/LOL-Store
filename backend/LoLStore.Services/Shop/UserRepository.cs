@@ -46,14 +46,14 @@ public class UserRepository : IUserRepository
             .ExecuteDeleteAsync(cancellationToken) > 0;
     }
 
-    public async Task<UserRefreshToken> GetRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+    public async Task<UserRefreshToken?> GetRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
         return await _context.Set<UserRefreshToken>()
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Token == refreshToken, cancellationToken);
     }
 
-    public async Task<User> GetUserByIdAsync(Guid id, bool getFull = false, CancellationToken cancellationToken = default)
+    public async Task<User?> GetUserByIdAsync(Guid id, bool getFull = false, CancellationToken cancellationToken = default)
     {
         if (getFull)
         {
@@ -81,7 +81,7 @@ public class UserRepository : IUserRepository
         return true;
     }
 
-    public async Task<User> RegisterAsync(User user, CancellationToken cancellationToken = default)
+    public async Task<User?> RegisterAsync(User user, CancellationToken cancellationToken = default)
     {
         if (await _context.Users.AnyAsync(u => u.UserName == user.UserName, cancellationToken))
             return null;
@@ -104,7 +104,7 @@ public class UserRepository : IUserRepository
         return user;
     }
 
-    public async Task<Role> GetRoleByNameAsync(string role, CancellationToken cancellationToken = default)
+    public async Task<Role?> GetRoleByNameAsync(string role, CancellationToken cancellationToken = default)
     {
         return await _context.Set<Role>()
             .Include(u => u.Users)
@@ -124,13 +124,16 @@ public class UserRepository : IUserRepository
             .ToListAsync(cancellationToken);
     }
     
-    public async Task<User> UpdateUserRolesAsync(Guid userId, IList<Guid> roles, CancellationToken cancellationToken = default)
+    public async Task<User?> UpdateUserRolesAsync(Guid userId, IList<Guid> roles, CancellationToken cancellationToken = default)
     {
         var user = await _context.Set<User>()
             .Include(r => r.Roles)
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
 
-        UpdateUserRoles(ref user, roles);
+        if (user == null)
+            return null;
+            
+        UpdateUserRoles(user, roles);
 
         _context.Entry(user).State = EntityState.Modified;
         await _context.SaveChangesAsync(cancellationToken);
@@ -138,7 +141,7 @@ public class UserRepository : IUserRepository
         return user;
     }
 
-    public bool UpdateUserRoles(ref User user, IEnumerable<Guid> selectedRoleIds)
+    public bool UpdateUserRoles(User user, IEnumerable<Guid> selectedRoleIds)
     {
         if (selectedRoleIds == null) return false;
 
@@ -198,19 +201,20 @@ public class UserRepository : IUserRepository
         return await projectedUser.ToPagedListAsync(pagingParams, cancellationToken);
     }
 
-    private IQueryable<User> FilterUser(IUserQuery query)
+    private IQueryable<User> FilterUser(UserQuery query)
     {
-        var users = _context.Set<User>()
+        var keyword = query.Keyword?.Trim();
+
+        return _context.Set<User>()
             .AsNoTracking()
-            .WhereIf(!string.IsNullOrWhiteSpace(query.Keyword), u =>
-                u.Address.Contains(query.Keyword) ||
-                u.Email.Contains(query.Keyword) ||
-                u.Name.Contains(query.Keyword) ||
-                u.UserName.Contains(query.Keyword));
-        return users;
+            .WhereIf(!string.IsNullOrWhiteSpace(keyword), u =>
+                (u.Address ?? string.Empty).Contains(keyword!) ||
+                (u.Email ?? string.Empty).Contains(keyword!) ||
+                (u.Name ?? string.Empty).Contains(keyword!) ||
+                (u.UserName ?? string.Empty).Contains(keyword!));
     }
 
-    public async Task<User> GetUserRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+    public async Task<User?> GetUserRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
         var userLogin = await _context.Set<UserRefreshToken>()
 			.FirstOrDefaultAsync(s => s.Token.Equals(refreshToken), cancellationToken);

@@ -19,8 +19,12 @@ namespace LoLStore.Data.Migrations
                     Name = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
                     UrlSlug = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    MetaDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ShowOnMenu = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -66,7 +70,7 @@ namespace LoLStore.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(1024)", maxLength: 1024, nullable: false),
-                    ContactEmail = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ContactEmail = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(1024)", maxLength: 1024, nullable: false, defaultValue: ""),
                     ContactName = table.Column<string>(type: "nvarchar(1024)", maxLength: 1024, nullable: false),
                     Address = table.Column<string>(type: "nvarchar(1024)", maxLength: 1024, nullable: false, defaultValue: ""),
@@ -88,7 +92,7 @@ namespace LoLStore.Data.Migrations
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: ""),
                     Password = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
-                    Username = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    UserName = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -107,9 +111,9 @@ namespace LoLStore.Data.Migrations
                     Name = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
                     CreateDate = table.Column<DateTime>(type: "datetime", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true, defaultValue: ""),
-                    Price = table.Column<double>(type: "float", nullable: false, defaultValue: 0.0),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false, defaultValue: 0m),
                     Quantity = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    Discount = table.Column<float>(type: "real", nullable: false, defaultValue: 0f),
+                    Discount = table.Column<decimal>(type: "decimal(18,2)", nullable: false, defaultValue: 0m),
                     Note = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true, defaultValue: ""),
                     Active = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
@@ -186,20 +190,21 @@ namespace LoLStore.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserLogins",
+                name: "UserRefreshTokens",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    TokenCreated = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    TokenExpires = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Token = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
+                    Created = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Expires = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserLogins", x => x.Id);
+                    table.PrimaryKey("PK_UserRefreshTokens", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_UserLogins_Users_Id",
-                        column: x => x.Id,
+                        name: "FK_UserRefreshTokens_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -212,8 +217,8 @@ namespace LoLStore.Data.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
                     Content = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
                     Rating = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -404,6 +409,11 @@ namespace LoLStore.Data.Migrations
                 name: "IX_UserInRoles_UsersId",
                 table: "UserInRoles",
                 column: "UsersId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserRefreshTokens_UserId",
+                table: "UserRefreshTokens",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -428,7 +438,7 @@ namespace LoLStore.Data.Migrations
                 name: "UserInRoles");
 
             migrationBuilder.DropTable(
-                name: "UserLogins");
+                name: "UserRefreshTokens");
 
             migrationBuilder.DropTable(
                 name: "Feedbacks");

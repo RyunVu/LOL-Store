@@ -23,10 +23,11 @@ public class PagedList<T> : IPagedList<T>
         PageCount = (int)Math.Ceiling(totalItemCount / (double)pageSize);
     }
 
-    public int PageCount { get; }
-    public int TotalItemCount { get; }
     public int PageIndex { get; }
     public int PageSize { get; }
+    public int TotalItemCount { get; }
+    public int PageCount { get; }
+
     public int PageNumber => PageIndex + 1;
 
     public bool HasPreviousPage => PageIndex > 0;
@@ -34,26 +35,33 @@ public class PagedList<T> : IPagedList<T>
     public bool IsFirstPage => PageIndex == 0;
     public bool IsLastPage => PageIndex + 1 >= PageCount;
 
-    public int FirstItemIndex => PageIndex * PageSize + 1;
+    public int FirstItemIndex => TotalItemCount == 0 ? 0 : PageIndex * PageSize + 1;
     public int LastItemIndex => Math.Min((PageIndex + 1) * PageSize, TotalItemCount);
 
-    public IReadOnlyList<T> Items => _items.AsReadOnly();
+    public IReadOnlyList<T> Items => _items;
     public int Count => _items.Count;
+
     public T this[int index] => _items[index];
 
     public IEnumerator<T> GetEnumerator() => _items.GetEnumerator();
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
-    public static async Task<PagedList<T>> CreateAsync(IQueryable<T> source, int pageIndex, int pageSize, CancellationToken cancellationToken = default)
+    public static async Task<PagedList<T>> CreateAsync(
+        IQueryable<T> source,
+        int pageIndex,
+        int pageSize,
+        CancellationToken cancellationToken = default)
     {
-        var totalItemCount = await source.CountAsync(cancellationToken).ConfigureAwait(false);
+        var totalItemCount = await source.CountAsync(cancellationToken);
+
         var items = await source
             .Skip(pageIndex * pageSize)
             .Take(pageSize)
-            .ToListAsync(cancellationToken).ConfigureAwait(false);
+            .ToListAsync(cancellationToken);
 
         return new PagedList<T>(items, pageIndex, pageSize, totalItemCount);
     }
 
-    public static PagedList<T> Empty => new PagedList<T>(new List<T>(), 0, 1, 0);
+    public static PagedList<T> Empty =>
+        new PagedList<T>(Array.Empty<T>(), 0, 1, 0);
 }

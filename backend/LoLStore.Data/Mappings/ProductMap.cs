@@ -30,14 +30,17 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 
 		builder.Property(s => s.Price)
 			.IsRequired()
-			.HasDefaultValue(0);
+			.HasColumnType("decimal(18,2)")
+			.HasDefaultValue(0m);
+
+		builder.Property(s => s.Discount)
+			.HasColumnType("decimal(18,2)")
+			.HasDefaultValue(0m);
 
 		builder.Property(s => s.Quantity)
 			.IsRequired()
 			.HasDefaultValue(0);
 
-		builder.Property(s => s.Discount)
-			.HasDefaultValue(0);
 
 		builder.Property(p => p.Active)
 			.IsRequired()

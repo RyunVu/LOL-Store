@@ -5,33 +5,35 @@ namespace LoLStore.Core.Entities;
 public class Product : IEntity
 {
     public Guid Id { get; set; }
-    public string Sku { get; set; }
-    public string UrlSlug { get; set; }
-    public string Name { get; set; }
-    public DateTime CreateDate { get; set; }
-    public string Description { get; set; }
-    public double Price { get; set; }
+    
+    // Required fields
+    public string Sku { get; set; } = string.Empty;
+    public string UrlSlug { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    
+    public DateTime CreateDate { get; set; } = DateTime.UtcNow;
+    
+    // Optional description
+    public string? Description { get; set; }
+    
+    // Use decimal for money!
+    public decimal Price { get; set; }
     public int Quantity { get; set; }
-    public float Discount { get; set; }
-    public string Note { get; set; }
+    public decimal Discount { get; set; }
+    
+    // Optional note
+    public string? Note { get; set; }
+    
     public bool Active { get; set; }
     public bool IsDeleted { get; set; }
     public Guid SupplierId { get; set; }
     public int CountOrder { get; set; }
 
-    // ======================================================
     // Navigation properties
-    // ======================================================
-
-    public Supplier Supplier { get; set; }
-
-    public IList<Category> Categories { get; set; }
-
-    public IList<OrderItem> Details { get; set; }
-
-    public IList<Feedback> Feedback { get; set; }
-
-    public IList<Picture> Pictures { get; set; }
-
-    public IList<ProductHistory> ProductHistories { get; set; }
+    public Supplier Supplier { get; set; } = null!;
+    public IList<Category> Categories { get; set; } = new List<Category>();
+    public IList<OrderItem> Details { get; set; } = new List<OrderItem>();
+    public IList<Feedback> Feedback { get; set; } = new List<Feedback>();
+    public IList<Picture> Pictures { get; set; } = new List<Picture>();
+    public IList<ProductHistory> ProductHistories { get; set; } = new List<ProductHistory>();
 }

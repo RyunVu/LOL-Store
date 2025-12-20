@@ -17,15 +17,20 @@ public enum OrderStatus
 public class Order : IEntity
 {
     public Guid Id { get; set; }
-    public DateTime OrderDate { get; set; }
-    public string CodeOrder { get; set; }
+    public DateTime OrderDate { get; set; } = DateTime.UtcNow;
+    
+    // Required fields
+    public string CodeOrder { get; set; } = string.Empty;
     public Guid UserId { get; set; }
     public OrderStatus Status { get; set; }
-    public string Name { get; set; }
-    public string Email { get; set; }
-    public string ShipAddress { get; set; }
-    public string Phone { get; set; }
-    public string Note { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string ShipAddress { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    
+    // Optional fields
+    public string? Note { get; set; }
+    
     public float DiscountAmount { get; set; }
     public bool IsDiscountApplied { get; set; }
 
@@ -33,7 +38,7 @@ public class Order : IEntity
     public double TotalAmount { get; set; }
 
     // Navigation properties
-    public User User { get; set; }
-    public Discount Discount { get; set; }
-    public IList<OrderItem> OrderItems { get; set; }
+    public User User { get; set; } = null!;
+    public Discount? Discount { get; set; }  // Nullable vì có thể không có discount
+    public IList<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }

@@ -4,11 +4,13 @@ namespace LoLStore.Core.Entities;
 
 public class Picture : IEntity
 {
-    public Guid Id { get; set; }
+     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
-    public string Path { get; set; }
+    
+    // Required field
+    public string Path { get; set; } = string.Empty;
     public bool Active { get; set; }
 
-    // Navigation properties
-    public virtual Product Product { get; set; }
+    // Navigation property
+    public Product Product { get; set; } = null!;
 }

@@ -13,6 +13,6 @@ public class OrderItem
     public double TotalPrice => Math.Round(Price * Quantity, 2);
     
     // Navigation properties
-    public Order Order { get; set; }
-    public Product Product { get; set; }
+    public Order Order { get; set; } = null!;
+    public Product Product { get; set; } = null!;
 }
