@@ -18,8 +18,11 @@ public class LocalFileSystemMediaManager : IMediaManager
 
     public async Task<string> SaveFileAsync(Stream buffer, string originalFileName, string contentType, CancellationToken cancellationToken = default)
     {
-        if (buffer == null || !buffer.CanRead || !buffer.CanSeek || buffer.Length == 0)
-            return null;
+        if (buffer == null)
+            throw new ArgumentNullException(nameof(buffer));
+
+        if (!buffer.CanRead || !buffer.CanSeek || buffer.Length == 0)
+            throw new ArgumentException("Buffer must be readable, seekable and not empty.", nameof(buffer));
 
         try
         {
@@ -29,6 +32,10 @@ public class LocalFileSystemMediaManager : IMediaManager
 
             // Ensure directory exists
             var directory = Path.GetDirectoryName(fullPath);
+
+            if (directory == null)
+                throw new InvalidOperationException("Could not determine directory for file storage.");
+
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);

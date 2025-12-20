@@ -7,6 +7,7 @@ public enum ProductHistoryAction
     None,
     Create,
     Delete,
+    Restore,
     Update
 }
 

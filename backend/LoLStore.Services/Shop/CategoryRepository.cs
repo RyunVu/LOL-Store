@@ -175,9 +175,9 @@ public class CategoryRepository : ICategoryRepository
             .AnyAsync(c => c.Id != excludeId && c.UrlSlug.Equals(slug), cancellationToken);
     }
 
-    public Task<Category?> GetCategoryByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Category?> GetCategoryByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return _context.Set<Category>()
+        return await _context.Set<Category>()
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 

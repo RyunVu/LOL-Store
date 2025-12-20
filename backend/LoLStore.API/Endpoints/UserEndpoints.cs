@@ -103,6 +103,14 @@ public static class UserEndpoints
                     IdentityManager.LoginResultMessage(result.Status)
                 ));
 
+            if (result.AuthenticatedUser == null)
+            {
+                return Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.BadRequest,
+                    "Authenticated failed."
+                ));
+            }
+
             var userDto = mapper.Map<UserDto>(result.AuthenticatedUser);
 
             var token = userDto.GenerateJwt(configuration);
@@ -343,6 +351,15 @@ public static class UserEndpoints
             }
 
             var updatedUser = await repository.UpdateUserRolesAsync(user.Id, model.RolesId);
+
+            if (updatedUser == null)
+            {
+                return Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.BadRequest,
+                    "Failed to update user roles."
+                ));
+            }
+            
             var userDto = mapper.Map<UserDto>(updatedUser);
             return Results.Ok(ApiResponse.Success(userDto));
         }

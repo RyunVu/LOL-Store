@@ -1,12 +1,10 @@
-public class PaginationResult<T> 
+public class PaginationResult<T>
 {
-    public IEnumerable<T> Items { get; set; }
-    public PagingMetadata Metadata { get; set; }
-    public PaginationResult() {}
+    public IEnumerable<T> Items { get; }
+    public PagingMetadata Metadata { get; }
     public PaginationResult(IPagedList<T> pagedList)
     {
         Items = pagedList;
         Metadata = PagingMetadata.FromPagedList(pagedList);
     }
-    
 }

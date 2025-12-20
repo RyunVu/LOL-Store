@@ -1,6 +1,6 @@
 namespace LoLStore.API.Models.ProductModel;
 
-public class ProductFilterModel
+public class ProductFilterModel : PagingModel
 {
     public string? Keyword { get; set; }
     public string? CategorySlug { get; set; }

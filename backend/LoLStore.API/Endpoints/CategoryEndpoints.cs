@@ -149,6 +149,14 @@ public static class CategoryEndpoints
         try
         {
             var category = await repository.GetCategoryByIdAsync(id);
+
+            if (category == null)
+            {
+                return Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.BadRequest,
+                    "Failed to update category."
+                ));
+            }
             var categoryItem = mapper.Map<CategoryDto>(category);
 
             return category == null
@@ -169,6 +177,14 @@ public static class CategoryEndpoints
         try
         {
             var category = await repository.GetCategoryBySlugAsync(slug, true);
+
+            if (category == null)
+            {
+                return Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.BadRequest,
+                    "Failed to get category."
+                ));
+            }
             var categoryItem = mapper.Map<CategoryDto>(category);
 
             return category == null

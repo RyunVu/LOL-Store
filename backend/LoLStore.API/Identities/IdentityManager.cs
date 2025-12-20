@@ -14,7 +14,7 @@ public static class IdentityManager
     /// <summary>
     /// Get currently authenticated user from HttpContext
     /// </summary>
-    public static UserDto GetCurrentUser(this HttpContext context)
+    public static UserDto? GetCurrentUser(this HttpContext context)
     {
         if (context.User?.Identity is not ClaimsIdentity identity)
             return null;
@@ -28,9 +28,9 @@ public static class IdentityManager
         return new UserDto
         {
             Id = userId,
-            UserName = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
-            Email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
-            Name = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
+            UserName = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
+            Email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? string.Empty,
+            Name = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty,
             Roles = identity
                 .FindAll(ClaimTypes.Role)
                 .Select(r => new RoleDto { Name = r.Value })
