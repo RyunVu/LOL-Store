@@ -12,7 +12,6 @@ dist-ssr/
 .env
 .env.local
 .env.*.local
-*.local
 
 # ========================================
 # Logs
@@ -55,13 +54,11 @@ Thumbs.db
 # ========================================
 frontend/dist/
 frontend/node_modules/
-frontend/.env
 
 # ========================================
 # Backend outputs (Express)
 # ========================================
 backend/node_modules/
-backend/.env
 backend/logs/
 docs/
 

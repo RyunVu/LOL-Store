@@ -5,6 +5,11 @@ using LoLStore.API.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsDevelopment())
+{
+    DotNetEnv.Env.Load();
+}
+
 builder
     .ConfigureCors()
     .ConfigureNLog()

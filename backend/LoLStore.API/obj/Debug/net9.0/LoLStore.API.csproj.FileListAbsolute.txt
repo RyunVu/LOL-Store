@@ -187,3 +187,5 @@ D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\refint\LoLStore
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\LoLStore.API.pdb
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\LoLStore.API.genruntimeconfig.cache
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\ref\LoLStore.API.dll
+D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\DotNetEnv.dll
+D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\Sprache.dll
