@@ -19,8 +19,30 @@ public static class WebApplicationExtensions
     {
         builder.Services.AddMemoryCache();
 
+        // Media options - file uploads configuration
+        builder.Services.Configure<MediaOptions>(builder.Configuration.GetSection("Media"));
+        // Defaults in case configuration section is missing
+        builder.Services.PostConfigure<MediaOptions>(opt =>
+        {
+            opt.UploadsFolder ??= "uploads/pictures";
+            opt.MaxFileSizeBytes ??= 5 * 1024 * 1024; // 5 MB
+            opt.AllowedExtensions ??= new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            opt.AllowedContentTypes ??= new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+            opt.ValidateMagicBytes ??= true;
+        });
+
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "ConnectionStrings:DefaultConnection is not configured."
+            );
+        }
+
         builder.Services.AddDbContext<StoreDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(connectionString)
+        );
 
         builder.Services.AddScoped<IMediaManager, LocalFileSystemMediaManager>();
         builder.Services.AddScoped<IDataSeeder, DataSeeder>();
@@ -35,20 +57,47 @@ public static class WebApplicationExtensions
 
     public static WebApplicationBuilder ConfigureCors(this WebApplicationBuilder builder)
     {
-        builder.Services.AddCors(option =>
-            option.AddPolicy("LoLStoreApp", policyBuilder =>
-                policyBuilder
-                    .WithOrigins(builder.Configuration["AllowLocalHost"] ?? "")
+        var allowedOrigin = builder.Configuration["AllowLocalHost"];
+
+        if (string.IsNullOrWhiteSpace(allowedOrigin))
+        {
+            throw new InvalidOperationException(
+                "AllowLocalHost is not configured."
+            );
+        }
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("LoLStoreApp", policy =>
+                policy.WithOrigins(allowedOrigin)
                     .AllowCredentials()
                     .AllowAnyHeader()
-                    .AllowAnyMethod()));
+                    .AllowAnyMethod());
+        });
+
         return builder;
     }
 
     public static WebApplicationBuilder ConfigureAuthenticationAndAuthorization(this WebApplicationBuilder builder)
     {
-        var jwtKey = builder.Configuration["Jwt:Key"]
-                        ?? throw new InvalidOperationException("JWT Key is not configured.");
+        var jwtKey = builder.Configuration["Jwt:Key"];
+
+        if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+        {
+            throw new InvalidOperationException(
+                "Jwt:Key is missing or too short. Use a minimum 32-character secret via env vars or user-secrets."
+            );
+        }
+
+        var issuer = builder.Configuration["Jwt:Issuer"];
+        var audience = builder.Configuration["Jwt:Audience"];
+
+        if (string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(audience))
+        {
+            throw new InvalidOperationException(
+                "Jwt:Issuer or Jwt:Audience is not configured."
+            );
+        }
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -59,8 +108,8 @@ public static class WebApplicationExtensions
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                    ValidAudience = builder.Configuration["Jwt:Audience"],
+                    ValidIssuer = issuer,
+                    ValidAudience = audience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
                     RoleClaimType = ClaimTypes.Role
                 };
