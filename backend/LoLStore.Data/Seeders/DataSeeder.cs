@@ -1,17 +1,21 @@
-using System.Threading.Tasks;
 using LoLStore.Core.Entities;
 using LoLStore.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+
 
 public class DataSeeder : IDataSeeder
 {
     private readonly StoreDbContext _context;
     private readonly IPasswordHasher _hasher;
+    private readonly IConfiguration _config;
     
-    public DataSeeder(StoreDbContext context, IPasswordHasher hasher)
+    public DataSeeder(StoreDbContext context, IPasswordHasher hasher, IConfiguration config)
     {
         _context = context;
         _hasher = hasher;
+        _config = config;
     }
 
     public async Task InitializeAsync()
@@ -58,24 +62,27 @@ public class DataSeeder : IDataSeeder
 
     private async Task AddUsersAsync(IList<Role> roles)
     {
-        var adminRoles = roles; // all roles
+        var adminPassword = _config["INITIAL_ADMIN_PASSWORD"];
 
-        var users = new List<User>
+        if (string.IsNullOrWhiteSpace(adminPassword))
         {
-            new()
-            {
-                Name = "Admin",
-                Email = "Admin@gmail.com",
-                Address = "Bruh",
-                Phone = "0123456789",
-                UserName = "admin",
-                Password = _hasher.HashPassword("admin123"),
-                CreatedDate = DateTime.UtcNow,
-                Roles = adminRoles
-            }
+            throw new InvalidOperationException(
+                "INITIAL_ADMIN_PASSWORD is required when seeding admin users.");
+        }
+
+        var adminUser = new User
+        {
+            Name = "Admin",
+            Email = "admin@lolstore.local",
+            Address = "N/A",
+            Phone = "N/A",
+            UserName = "admin",
+            Password = _hasher.HashPassword(adminPassword),
+            CreatedDate = DateTime.UtcNow,
+            Roles = roles
         };
 
-        _context.Users.AddRange(users);
+        _context.Users.Add(adminUser);
         await _context.SaveChangesAsync();
     }
 

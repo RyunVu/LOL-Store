@@ -189,3 +189,7 @@ D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\LoLStore.API.ge
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\obj\Debug\net9.0\ref\LoLStore.API.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\DotNetEnv.dll
 D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\Sprache.dll
+D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
+D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\Microsoft.Extensions.FileProviders.Abstractions.dll
+D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\Microsoft.Extensions.Hosting.Abstractions.dll
+D:\Work\Code\Web\LoL_Store\backend\LoLStore.API\bin\Debug\net9.0\System.Diagnostics.DiagnosticSource.dll

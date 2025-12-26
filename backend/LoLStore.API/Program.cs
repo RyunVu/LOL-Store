@@ -23,7 +23,15 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-await app.UseDataSeederAsync(); 
+var shouldSeed =
+    builder.Environment.IsDevelopment() ||
+    builder.Configuration.GetValue<bool>("SEED_DATABASE");
+
+if (shouldSeed)
+{
+    app.Logger.LogWarning("Database seeding is ENABLED");
+    await app.UseDataSeederAsync();
+}
 
 app.SetupContext()
     .SetupMiddleware()
