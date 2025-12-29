@@ -34,7 +34,7 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 			.HasDefaultValue(0m);
 
 		builder.Property(s => s.Discount)
-			.HasColumnType("decimal(18,2)")
+			.HasColumnType("decimal(5,2)")
 			.HasDefaultValue(0m);
 
 		builder.Property(s => s.Quantity)
@@ -58,9 +58,18 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 			.IsRequired()
 			.HasDefaultValue(0);
 
+		// Unique SKU
+		builder.HasIndex(p => p.Sku)
+			.IsUnique();
+
+		// Unique URL slug
+		builder.HasIndex(p => p.UrlSlug)
+			.IsUnique();
+
 		// Configure the timestamps
 		builder.Property(o => o.CreateDate)
-			.HasColumnType("datetime");
+			.HasColumnType("datetime2")
+			.HasDefaultValueSql("SYSUTCDATETIME()");
 
 		builder.HasMany(s => s.Categories)
 			.WithMany(s => s.Products)
@@ -72,7 +81,7 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 			.HasConstraintName("FK_Products_Pictures")
 			.OnDelete(DeleteBehavior.Cascade);
 
-		builder.HasMany(o => o.Details)
+		builder.HasMany(o => o.OrderItems)
 			.WithOne(d => d.Product)
 			.HasForeignKey(d => d.ProductId)
 			.HasConstraintName("FK_Products_Details")

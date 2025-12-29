@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LoLStore.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1809457e3c0f35a0284f376389282cb4c37875ad")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+069ac4075dd0e07cc7df41c51380c12868c40cd6")]
 [assembly: System.Reflection.AssemblyProductAttribute("LoLStore.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LoLStore.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -14,7 +14,7 @@ public class Product : IEntity
     public DateTime CreateDate { get; set; } = DateTime.UtcNow;
     
     // Optional description
-    public string? Description { get; set; }
+    public string Description { get; set; } = string.Empty;
     
     // Use decimal for money!
     public decimal Price { get; set; }
@@ -22,7 +22,7 @@ public class Product : IEntity
     public decimal Discount { get; set; }
     
     // Optional note
-    public string? Note { get; set; }
+    public string Note { get; set; } = string.Empty;
     
     public bool Active { get; set; }
     public bool IsDeleted { get; set; }
@@ -32,7 +32,7 @@ public class Product : IEntity
     // Navigation properties
     public Supplier Supplier { get; set; } = null!;
     public IList<Category> Categories { get; set; } = new List<Category>();
-    public IList<OrderItem> Details { get; set; } = new List<OrderItem>();
+    public IList<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     public IList<Feedback> Feedback { get; set; } = new List<Feedback>();
     public IList<Picture> Pictures { get; set; } = new List<Picture>();
     public IList<ProductHistory> ProductHistories { get; set; } = new List<ProductHistory>();

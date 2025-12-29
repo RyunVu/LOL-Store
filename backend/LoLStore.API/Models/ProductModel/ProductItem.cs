@@ -8,7 +8,7 @@ public class ProductItem
 
     public string Sku { get; set; } = string.Empty;
 
-    public string Instruction { get; set; } = string.Empty;
+    public string Note { get; set; } = string.Empty;
 
     public DateTime CreateDate { get; set; }
 

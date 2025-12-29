@@ -32,6 +32,10 @@ public class ProductRepository : IProductRepository
                 .Include(p => p.Feedback)
                 .Include(p => p.Pictures);
         }
+        else
+        {
+            query = query.Include(p => p.Pictures);
+        }
 
         return await query.FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
     }
@@ -42,6 +46,9 @@ public class ProductRepository : IProductRepository
     {
         return await _context.Set<Product>()
             .AsNoTracking()
+            .Include(p => p.Categories)
+            .Include(p => p.Pictures)
+            .Include(p => p.Supplier)
             .FirstOrDefaultAsync(p => p.UrlSlug == slug, cancellationToken);
     }
 
@@ -54,7 +61,7 @@ public class ProductRepository : IProductRepository
             .AnyAsync(p => p.Id != excludeProductId && p.UrlSlug == slug, cancellationToken);
     }
 
-    public async Task<bool> IsProductExistedAsync(
+    public async Task<bool> IsProductNameExistedAsync(
         string name,
         Guid? excludeProductId = null,
         CancellationToken cancellationToken = default)
@@ -69,7 +76,14 @@ public class ProductRepository : IProductRepository
         string editReason = "",
         CancellationToken cancellationToken = default)
     {
-        product.UrlSlug = product.Name.GenerateSlug();
+        var slug = product.Name.GenerateSlug();
+
+        if (await IsProductSlugExistedAsync(slug, product.Id, cancellationToken))
+        {
+            throw new InvalidOperationException($"Product slug `{slug}` already exists.");
+        }
+
+        product.UrlSlug = slug;
 
         var isNew = !_context.Set<Product>().Any(p => p.Id == product.Id);
 
@@ -87,7 +101,8 @@ public class ProductRepository : IProductRepository
             HistoryAction = isNew
                 ? ProductHistoryAction.Create
                 : ProductHistoryAction.Update,
-            EditReason = editReason
+            EditReason = editReason,
+            ActionTime = DateTime.UtcNow
         });
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -96,14 +111,10 @@ public class ProductRepository : IProductRepository
     }
 
     public async Task<Product?> SetProductCategoriesAsync(
-        Guid productId,
+        Product product,
         IEnumerable<Guid> categoryIds,
         CancellationToken cancellationToken = default)
     {
-        var product = await _context.Set<Product>()
-            .Include(p => p.Categories)
-            .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
-
         if (product == null)
             return null;
 
@@ -163,7 +174,7 @@ public class ProductRepository : IProductRepository
     {
         var products = _context.Set<Product>()
             .AsNoTracking()
-            .Include(p => p.Details)
+            .Include(p => p.OrderItems)
             .Include(p => p.Pictures)
             .AsQueryable();
 
@@ -381,6 +392,71 @@ public class ProductRepository : IProductRepository
 
     return updated;
     }
+
+    public async Task<bool> SetImageUrlAsync(Guid productId, string imageUrl, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return false;
+        }
+
+        var productExisted = await _context.Set<Product>()
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == productId, cancellationToken);
+
+        if (!productExisted)
+        {
+            return false;
+        }
+
+        _context.Set<Picture>().Add(new Picture
+        {
+            Id = Guid.NewGuid(),
+            ProductId = productId,
+            Path = imageUrl.Trim(),
+            Active = true
+        });
+
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
+    }
+
+    public async Task<IList<Picture>> GetImageUrlsAsync(Guid productId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<Picture>()
+            .AsNoTracking()
+            .Where(p => p.ProductId == productId && p.Active)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<bool> DeleteImageUrlsAsync(Guid productId, CancellationToken cancellationToken = default)
+    {
+        var deletedCount = await _context.Set<Picture>()
+        .Where(p => p.ProductId == productId)
+        .ExecuteDeleteAsync(cancellationToken);
+
+        return deletedCount > 0;
+    }
+
+    
+    public async Task<bool> DeleteProductHistoriesAsync(IList<Guid> historyIds, CancellationToken cancellationToken = default)
+    {
+        if (historyIds == null)
+        return false;
+
+        var ids = historyIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+
+        if (ids.Count == 0)
+            return false;
+
+        var deletedCount = await _context.Set<ProductHistory>()
+            .Where(ph => ids.Contains(ph.Id))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        return deletedCount > 0;
+    } 
 
     #endregion
 }

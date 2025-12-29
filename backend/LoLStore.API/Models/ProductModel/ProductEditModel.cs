@@ -4,7 +4,7 @@ public class ProductEditModel
 {
     public string Name { get; set; } = string.Empty;
     public string Sku { get; set; } = string.Empty;
-    public string Instruction { get; set; } = string.Empty;
+    public string Note { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
     public string? UrlSlug { get; set; }
@@ -16,8 +16,6 @@ public class ProductEditModel
     public int MinQuantity { get; set; }
 
     public decimal Discount { get; set; }
-
-    public string? Note { get; set; } 
 
     public Guid SupplierId { get; set; }
 

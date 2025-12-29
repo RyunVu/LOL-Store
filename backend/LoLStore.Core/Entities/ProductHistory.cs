@@ -19,8 +19,7 @@ public class ProductHistory : IEntity
     public DateTime ActionTime { get; set; } = DateTime.UtcNow;
     public ProductHistoryAction HistoryAction { get; set; }
     
-    // Optional field
-    public string? EditReason { get; set; }
+    public string EditReason { get; set; } = string.Empty;
 
     // Navigation properties
     public User User { get; set; } = null!;
