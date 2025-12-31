@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LoLStore.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c19588f9dc2e50ec6863b7c20bd12f539536468b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+507e74ca8313134f70e02aca2dbc7fcceb0f4930")]
 [assembly: System.Reflection.AssemblyProductAttribute("LoLStore.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LoLStore.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
