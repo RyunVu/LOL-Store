@@ -2,7 +2,6 @@ using LoLStore.Core.Entities;
 using LoLStore.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 
 
 public class DataSeeder : IDataSeeder
@@ -20,29 +19,40 @@ public class DataSeeder : IDataSeeder
 
     public async Task InitializeAsync()
     {
-         await _context.Database.MigrateAsync();
-
-        var roles = await _context.Roles.AnyAsync()
-            ? await _context.Roles.ToListAsync()
-            : await AddRolesAsync();
-
-        if (!await _context.Users.AnyAsync())
-            await AddUsersAsync(roles);
-
-        if (!await _context.Categories.AnyAsync())
-            await AddCategoriesAsync();
-
-        if (!await _context.Discounts.AnyAsync())
-            await AddDiscountAsync();
-
-        if (!await _context.Suppliers.AnyAsync())
-            await AddSuppliersAsync();
-
-        if (!await _context.Products.AnyAsync())
+        try
         {
-            await AddProductAsync(
-                await _context.Categories.ToListAsync(),
-                await _context.Suppliers.ToListAsync());
+            await _context.Database.MigrateAsync();
+
+            var roles = await _context.Roles.AnyAsync()
+                ? await _context.Roles.ToListAsync()
+                : await AddRolesAsync();
+
+            if (!await _context.Users.AnyAsync())
+                await AddUsersAsync(roles);
+
+            if (!await _context.Categories.AnyAsync())
+                await AddCategoriesAsync();
+
+            if (!await _context.Discounts.AnyAsync())
+                await AddDiscountAsync();
+
+            if (!await _context.Suppliers.AnyAsync())
+                await AddSuppliersAsync();
+
+            if (!await _context.Products.AnyAsync())
+            {
+                await AddProductAsync(
+                    await _context.Categories.ToListAsync(),
+                    await _context.Suppliers.ToListAsync());
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("❌ Database seeding failed");
+            Console.WriteLine(ex);
+            Console.ResetColor();
+            throw;
         }
     }
 
@@ -65,13 +75,13 @@ public class DataSeeder : IDataSeeder
         var adminPassword = _config["INITIAL_ADMIN_PASSWORD"];
 
         if (string.IsNullOrWhiteSpace(adminPassword))
-        {
             throw new InvalidOperationException(
                 "INITIAL_ADMIN_PASSWORD is required when seeding admin users.");
-        }
+
 
         var adminUser = new User
         {
+            Id = Guid.NewGuid(),
             Name = "Admin",
             Email = "admin@lolstore.local",
             Address = "N/A",
@@ -79,7 +89,7 @@ public class DataSeeder : IDataSeeder
             UserName = "admin",
             Password = _hasher.HashPassword(adminPassword),
             CreatedDate = DateTime.UtcNow,
-            Roles = roles
+            Roles = roles.ToList()
         };
 
         _context.Users.Add(adminUser);

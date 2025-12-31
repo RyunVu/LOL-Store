@@ -50,25 +50,26 @@ lerna-debug.log*
 Thumbs.db
 
 # ========================================
-# Build outputs (for Vite/React)
+# Build outputs (Frontend)
 # ========================================
 frontend/dist/
 frontend/node_modules/
 
 # ========================================
-# Backend outputs (Express)
+# Backend (Node / Express)
 # ========================================
 backend/node_modules/
 backend/logs/
-docs/
 
 # ========================================
-# Personal / Local Files
+# .NET build output (CRITICAL)
 # ========================================
-Tasks.txt
-ChangeLog/
-
-
-# .NET build output
 **/bin/
 **/obj/
+
+# ========================================
+# Docs & Personal
+# ========================================
+docs/
+Tasks.txt
+ChangeLog/

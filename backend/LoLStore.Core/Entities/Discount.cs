@@ -9,7 +9,7 @@ public class Discount : IEntity
     
     // Required fields
     public string Code { get; set; } = string.Empty;
-    public float DiscountValue { get; set; }
+    public decimal DiscountValue { get; set; }
     public bool IsPercentage { get; set; }
     
     // Optional fields - nullable 

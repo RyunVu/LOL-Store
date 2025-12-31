@@ -17,9 +17,9 @@ public class ProductValidator : AbstractValidator<ProductEditModel>
             .MaximumLength(255)
             .WithMessage("Product name must not exceed 255 characters.");
 
-        RuleFor(x => x.Instruction)
+        RuleFor(x => x.Note)
             .MaximumLength(2048)
-            .WithMessage("Instruction must not exceed 2048 characters.");
+            .WithMessage("Note must not exceed 2048 characters.");
 
         RuleFor(x => x.Description)
             .MaximumLength(2048)

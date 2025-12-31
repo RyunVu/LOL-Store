@@ -1,8 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using LoLStore.Core.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace LoLStore.Data.Mappings;
+
 public class OrderMap : IEntityTypeConfiguration<Order>
 {
     public void Configure(EntityTypeBuilder<Order> builder)
@@ -12,45 +13,51 @@ public class OrderMap : IEntityTypeConfiguration<Order>
         builder.HasKey(o => o.Id);
 
         builder.Property(o => o.Name)
-			.IsRequired()
-			.HasMaxLength(128);
-		
-		builder.Property(s => s.CodeOrder)
-			.IsRequired()
-			.HasMaxLength(128);
+            .IsRequired()
+            .HasMaxLength(128);
 
-		builder.Property(o => o.Email)
-			.IsRequired()
-			.HasMaxLength(128);
+        builder.Property(o => o.CodeOrder)
+            .IsRequired()
+            .HasMaxLength(128);
 
-		builder.Property(o => o.ShipAddress)
-			.IsRequired()
-			.HasMaxLength(512);
+        builder.Property(o => o.Email)
+            .IsRequired()
+            .HasMaxLength(128);
 
-		builder.Property(o => o.Phone)
-			.IsRequired()
-			.HasMaxLength(12);
+        builder.Property(o => o.ShipAddress)
+            .IsRequired()
+            .HasMaxLength(512);
 
-		builder.Property(o => o.Note)
-			.HasMaxLength(1024);
+        builder.Property(o => o.Phone)
+            .IsRequired()
+            .HasMaxLength(12);
 
-		builder.Property(s => s.DiscountAmount)
-			.HasDefaultValue(0);
+        builder.Property(o => o.Note)
+            .HasMaxLength(1024);
 
-		builder.Property(s => s.IsDiscountApplied)
-			.IsRequired()
-			.HasDefaultValue(false);
+        // 💰 Money fields
+        builder.Property(o => o.DiscountAmount)
+            .HasPrecision(18, 2)
+            .HasDefaultValue(0);
 
-		// Configure the details collection
-		builder.HasMany(o => o.OrderItems)
-			.WithOne(d => d.Order)
-			.HasForeignKey(d => d.OrderId)
-			.HasConstraintName("FK_Orders_Details")
-			.OnDelete(DeleteBehavior.Cascade);
+        builder.Property(o => o.TotalAmount)
+            .HasPrecision(18, 2)
+            .HasDefaultValue(0);
 
-		// Configure the timestamps
-		builder.Property(o => o.OrderDate)
-			.IsRequired()
-			.HasColumnType("datetime");
+        builder.Property(o => o.IsDiscountApplied)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        // Order details
+        builder.HasMany(o => o.OrderItems)
+            .WithOne(d => d.Order)
+            .HasForeignKey(d => d.OrderId)
+            .HasConstraintName("FK_Orders_Details")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Dates
+        builder.Property(o => o.OrderDate)
+            .IsRequired()
+            .HasColumnType("datetime2");
     }
 }

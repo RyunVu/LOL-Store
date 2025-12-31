@@ -29,6 +29,12 @@ public class AccountMap : IEntityTypeConfiguration<User>
 			.IsRequired()
 			.HasMaxLength(512);
 
+		builder.HasIndex(u => u.UserName)
+            .IsUnique();
+
+        builder.HasIndex(u => u.Email)
+            .IsUnique();
+
 		builder.HasMany(s => s.Roles)
 			.WithMany(s => s.Users)
 			.UsingEntity(pt => pt.ToTable("UserInRoles"));

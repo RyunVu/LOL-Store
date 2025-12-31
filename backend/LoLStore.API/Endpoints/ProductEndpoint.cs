@@ -23,44 +23,52 @@ public static class ProductEndpoint
 
     public static WebApplication MapProductEndpoint(this WebApplication app)
     {
-        var group = app.MapGroup("/api/products");
+        var builder = app.MapGroup("/api/products");
 
         #region GET
-        group.MapGet("/", GetProducts);
-        group.MapGet("/{id:guid}", GetProductById);
-        group.MapGet("/bySlug/{slug:regex(^[a-z0-9_-]+$)}", GetProductBySlug);
-        group.MapGet("/toggle-active/{id:guid}", ToggleActiveProduct)
+        builder.MapGet("/", GetProducts)
+            .Produces<ApiResponse<IPagedList<ProductDto>>>();
+        builder.MapGet("/{id:guid}", GetProductById)
+			.Produces<ApiResponse<ProductDto>>();
+        builder.MapGet("/bySlug/{slug:regex(^[a-z0-9_-]+$)}", GetProductBySlug)			
+            .Produces<ApiResponse<ProductDto>>();
+        builder.MapGet("/toggle-active/{id:guid}", ToggleActiveProduct)
             .RequireAuthorization("RequireManagerRole");
-        group.MapGet("/histories", GetProductHistories)
-            .RequireAuthorization("RequireAdminRole");
-        group.MapGet("/TopSales/{num:int}", GetProductsTopSale);
-        group.MapGet("/Related/{slug:regex(^[a-z0-9_-]+$)}/{num:int}", GetRelatedProducts);
+        builder.MapGet("/histories", GetProductHistories)
+            .RequireAuthorization("RequireAdminRole")
+			.Produces<ApiResponse<IPagedList<ProductHistoryDto>>>();
+        builder.MapGet("/TopSales/{num:int}", GetProductsTopSale)
+			.Produces<ApiResponse<IList<ProductDto>>>();
+        builder.MapGet("/Related/{slug:regex(^[a-z0-9_-]+$)}/{num:int}", GetRelatedProducts)
+			.Produces<ApiResponse<IList<ProductDto>>>();
         #endregion
 
         #region POST
-        group.MapPost("/", AddProduct)
+        builder.MapPost("/", AddProduct)
             .AddEndpointFilter<ValidatorFilter<ProductEditModel>>()
-            .RequireAuthorization("RequireManagerRole");
+            .RequireAuthorization("RequireManagerRole")
+			.Produces<ApiResponse<ProductDto>>();
 
-        group.MapPost("/{id:guid}/pictures", SetProductPicture)
+        builder.MapPost("/{id:guid}/pictures", SetProductPicture)
             .RequireAuthorization("RequireManagerRole")
             .Accepts<IList<IFormFile>>("multipart/form-data");
         #endregion
 
         #region PUT
-        group.MapPut("/{id:guid}", UpdateProduct)
+        builder.MapPut("/{id:guid}", UpdateProduct)
             .AddEndpointFilter<ValidatorFilter<ProductEditModel>>()
-            .RequireAuthorization("RequireManagerRole");
+            .RequireAuthorization("RequireManagerRole")
+			.Produces<ApiResponse<ProductDto>>();
         #endregion
 
         #region DELETE
-        group.MapDelete("/toggleDelete/{id:guid}", ToggleDeleteProduct)
+        builder.MapDelete("/toggleDelete/{id:guid}", ToggleDeleteProduct)
             .RequireAuthorization("RequireManagerRole");
 
-        group.MapDelete("/{id:guid}", DeleteProduct)
+        builder.MapDelete("/{id:guid}", DeleteProduct)
             .RequireAuthorization("RequireAdminRole");
 
-        group.MapDelete("/histories", DeleteHistory)
+        builder.MapDelete("/histories", DeleteHistory)
             .RequireAuthorization("RequireAdminRole");
         #endregion
 
@@ -71,8 +79,8 @@ public static class ProductEndpoint
 
     private static async Task<IResult> GetProducts(
         [AsParameters] ProductFilterModel model,
-        IProductRepository repository,
-        IMapper mapper,
+        [FromServices] IProductRepository repository,
+        [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var query = mapper.Map<ProductQuery>(model);
@@ -88,9 +96,9 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> GetProductById(
-        Guid id,
-        IProductRepository repository,
-        IMapper mapper,
+        [FromRoute] Guid id,
+        [FromServices] IProductRepository repository,
+        [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var product = await repository.GetProductByIdAsync(id, false, ct);
@@ -100,9 +108,9 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> GetProductBySlug(
-        string slug,
-        IProductRepository repository,
-        IMapper mapper,
+        [FromRoute] string slug,
+        [FromServices] IProductRepository repository,
+        [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var product = await repository.GetProductBySlugAsync(slug, ct);
@@ -112,8 +120,8 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> ToggleActiveProduct(
-        Guid id,
-        IProductRepository repository,
+        [FromRoute] Guid id,
+        [FromServices] IProductRepository repository,
         CancellationToken ct)
     {
         return await repository.ToggleActiveProductAsync(id, ct)
@@ -123,8 +131,8 @@ public static class ProductEndpoint
 
     private static async Task<IResult> GetProductHistories(
         [AsParameters] ProductHistoryFilterModel model,
-        IProductRepository repository,
-        IMapper mapper,
+        [FromServices] IProductRepository repository,
+        [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var query = mapper.Map<ProductHistoryQuery>(model);
@@ -139,9 +147,9 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> GetProductsTopSale(
-        int num,
-        IProductRepository repository,
-        IMapper mapper,
+        [FromRoute] int num,
+        [FromServices] IProductRepository repository,
+        [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var products = await repository.GetMostSaledProductsAsync(num, ct);
@@ -149,10 +157,10 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> GetRelatedProducts(
-        string slug,
-        int num,
-        IProductRepository repository,
-        IMapper mapper,
+        [FromRoute] string slug,
+        [FromRoute] int num,
+        [FromServices] IProductRepository repository,
+        [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var products = await repository.GetRelatedProductsAsync(slug, num, ct);
@@ -166,9 +174,9 @@ public static class ProductEndpoint
     private static async Task<IResult> AddProduct(
         HttpContext context,
         ProductEditModel model,
-        IProductRepository productRepo,
-        ISupplierRepository supplierRepo,
-        IMapper mapper,
+        [FromServices] IProductRepository productRepo,
+        [FromServices] ISupplierRepository supplierRepo,
+        [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var user = context.GetCurrentUser();
@@ -197,12 +205,12 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> UpdateProduct(
-        Guid id,
+        [FromRoute] Guid id,
         HttpContext context,
-        ProductEditModel model,
-        IProductRepository repo,
-        ISupplierRepository supplierRepo,
-        IMapper mapper,
+        [FromBody] ProductEditModel model,
+        [FromServices] IProductRepository repo,
+        [FromServices] ISupplierRepository supplierRepo,
+        [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var user = context.GetCurrentUser();
@@ -237,10 +245,10 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> SetProductPicture(
-        Guid id,
+        [FromRoute] Guid id,
         HttpContext context,
-        IProductRepository repo,
-        IMediaManager media,
+        [FromServices] IProductRepository repo,
+        [FromServices] IMediaManager media,
         CancellationToken ct)
     {
         var files = context.Request.Form.Files;
@@ -291,10 +299,10 @@ public static class ProductEndpoint
     #region DELETE METHODS
 
     private static async Task<IResult> ToggleDeleteProduct(
-        Guid id,
+        [FromRoute] Guid id,
         HttpContext context,
-        ProductEditModel model,
-        IProductRepository repo,
+        [FromBody] ProductEditModel model,
+        [FromServices] IProductRepository repo,
         CancellationToken ct)
     {
         var user = context.GetCurrentUser();
@@ -311,9 +319,9 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> DeleteProduct(
-        Guid id,
-        IProductRepository repo,
-        IMediaManager media)
+        [FromRoute] Guid id,
+        [FromServices] IProductRepository repo,
+        [FromServices] IMediaManager media)
     {
         var product = await repo.GetProductByIdAsync(id);
         if (product == null)
@@ -333,8 +341,8 @@ public static class ProductEndpoint
     }
 
     private static async Task<IResult> DeleteHistory(
-        IList<Guid> ids,
-        IProductRepository repo)
+        [FromBody] IList<Guid> ids,
+        [FromServices] IProductRepository repo)
     {
         if (ids == null || ids.Count == 0)
             return Results.BadRequest(ApiResponse.Fail(

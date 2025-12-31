@@ -4,6 +4,7 @@ using LoLStore.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoLStore.Data.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    partial class StoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251230044128_UpdatedOrderTable")]
+    partial class UpdatedOrderTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -99,7 +102,6 @@ namespace LoLStore.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("DiscountValue")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("EndDate")
@@ -206,7 +208,6 @@ namespace LoLStore.Data.Migrations
 
                     b.Property<decimal>("DiscountAmount")
                         .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
 
@@ -233,7 +234,7 @@ namespace LoLStore.Data.Migrations
                         .HasColumnType("nvarchar(1024)");
 
                     b.Property<DateTime>("OrderDate")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime");
 
                     b.Property<string>("Phone")
                         .IsRequired()
@@ -249,10 +250,7 @@ namespace LoLStore.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("TotalAmount")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
-                        .HasDefaultValue(0m);
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -276,7 +274,6 @@ namespace LoLStore.Data.Migrations
 
                     b.Property<decimal>("Price")
                         .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
 
@@ -524,7 +521,7 @@ namespace LoLStore.Data.Migrations
                     b.Property<string>("Email")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("");
 
                     b.Property<string>("Name")
@@ -548,12 +545,6 @@ namespace LoLStore.Data.Migrations
                         .HasColumnType("nvarchar(128)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("UserName")
-                        .IsUnique();
 
                     b.ToTable("Users", (string)null);
                 });
