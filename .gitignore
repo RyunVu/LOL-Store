@@ -67,3 +67,8 @@ docs/
 # ========================================
 Tasks.txt
 ChangeLog/
+
+
+# .NET build output
+**/bin/
+**/obj/
