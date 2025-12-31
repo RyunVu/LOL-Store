@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using LoLStore.Core.Entities;
 
 namespace LoLStore.Data.Mappings;
-public class OrderDetailMap : IEntityTypeConfiguration<OrderItem>
+public class OrderDetailMap : IEntityTypeConfiguration<OrderDetail>
 {
-    public void Configure(EntityTypeBuilder<OrderItem> builder)
+    public void Configure(EntityTypeBuilder<OrderDetail> builder)
     {
         builder.HasKey(od => new
         {

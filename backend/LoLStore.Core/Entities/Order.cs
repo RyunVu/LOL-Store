@@ -31,14 +31,12 @@ public class Order : IEntity
     // Optional fields
     public string? Note { get; set; }
     
-    public float DiscountAmount { get; set; }
+    public decimal DiscountAmount { get; set; }
     public bool IsDiscountApplied { get; set; }
-
-    [NotMapped]
-    public double TotalAmount { get; set; }
+    public decimal TotalAmount { get; set; }
 
     // Navigation properties
     public User User { get; set; } = null!;
     public Discount? Discount { get; set; }  // Nullable vì có thể không có discount
-    public IList<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+    public IList<OrderDetail> OrderItems { get; set; } = new List<OrderDetail>();
 }
