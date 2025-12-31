@@ -38,9 +38,7 @@ public static class UserEndpoints
         builder.MapGet("/roles", GetRoles)
             .WithName("GetRolesAsync")
             .RequireAuthorization("RequireAdminRole")
-            .Produces<ApiResponse<IList<RoleDto>>>()
-            .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden);
+            .Produces<ApiResponse<IList<RoleDto>>>();
         
         // builder.MapGet("/getProfile", GetProfile)
         //     .WithName("GetProfile")
@@ -71,9 +69,7 @@ public static class UserEndpoints
         builder.MapPut("/updateUserRoles", UpdateUserRoles)
             .WithName("UpdateUserRoles")
             .RequireAuthorization("RequireAdminRole")
-            .Produces<ApiResponse<UserDto>>()
-            .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden);
+            .Produces<ApiResponse<UserDto>>();
 
         # endregion
 
@@ -91,50 +87,37 @@ public static class UserEndpoints
     [FromServices] IMapper mapper,
     [FromServices] IConfiguration configuration)
     {
-        try
+        var user = mapper.Map<User>(model);
+
+        var result = await repository.LoginAsync(user);
+
+        if (result.Status != LoginStatus.Success || result.AuthenticatedUser == null)
         {
-            var user = mapper.Map<User>(model);
-
-            var result = await repository.LoginAsync(user);
-
-            if (result.Status != LoginStatus.Success)
-                return Results.Ok(ApiResponse.Fail(
-                    HttpStatusCode.BadRequest,
-                    IdentityManager.LoginResultMessage(result.Status)
-                ));
-
-            if (result.AuthenticatedUser == null)
-            {
-                return Results.Ok(ApiResponse.Fail(
-                    HttpStatusCode.BadRequest,
-                    "Authenticated failed."
-                ));
-            }
-
-            var userDto = mapper.Map<UserDto>(result.AuthenticatedUser);
-
-            var token = userDto.GenerateJwt(configuration);
-
-            var refreshToken = IdentityManager.GenerateRefreshToken(userDto.Id);
-
-            await repository.SetRefreshTokenAsync(userDto.Id, refreshToken);
-
-            context.SetRefreshTokenCookie(refreshToken);
-
-            var accessToken = new AccessTokenModel
-            {
-                Token = new JwtSecurityTokenHandler().WriteToken(token),
-                TokenType = "bearer",
-                ExpiresToken = token.ValidTo,
-                UserDto = userDto
-            };
-
-            return Results.Ok(ApiResponse.Success(accessToken));
+            return Results.Ok(ApiResponse.Fail(
+                HttpStatusCode.Unauthorized,
+                IdentityManager.LoginResultMessage(result.Status)
+            ));
         }
-        catch (Exception e)
+
+        var userDto = mapper.Map<UserDto>(result.AuthenticatedUser);
+
+        var token = userDto.GenerateJwt(configuration);
+
+        var refreshToken = IdentityManager.GenerateRefreshToken(userDto.Id);
+
+        await repository.SetRefreshTokenAsync(userDto.Id, refreshToken);
+
+        context.SetRefreshTokenCookie(refreshToken);
+
+        var accessToken = new AccessTokenModel
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
-        }
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            TokenType = "bearer",
+            ExpiresToken = token.ValidTo,
+            UserDto = userDto
+        };
+
+        return Results.Ok(ApiResponse.Success(accessToken));
     }
 
     private static async Task<IResult> RefreshToken(
@@ -143,82 +126,68 @@ public static class UserEndpoints
         [FromServices] IMapper mapper,
         [FromServices] IConfiguration configuration)
     {
-        try
+        var refreshTokenString = context.Request.Cookies["refreshToken"];
+        if (string.IsNullOrWhiteSpace(refreshTokenString))
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token cookie is missing."));
+
+        var tokenEntity = await repository.GetRefreshTokenAsync(refreshTokenString);
+        if (tokenEntity == null)
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token not found."));
+
+        if (tokenEntity.Expires <= DateTime.UtcNow)
         {
-            var refreshTokenString = context.Request.Cookies["refreshToken"];
-            if (string.IsNullOrWhiteSpace(refreshTokenString))
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token cookie is missing."));
-
-            var tokenEntity = await repository.GetRefreshTokenAsync(refreshTokenString);
-            if (tokenEntity == null)
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token not found."));
-
-            if (tokenEntity.Expires <= DateTime.UtcNow)
-            {
-                // token expired: delete it from DB and force re-login
-                await repository.DeleteRefreshTokenAsync(refreshTokenString);
-                context.RemoveRefreshTokenCookie();
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token expired. Please login again."));
-            }
-
-            var user = await repository.GetUserByIdAsync(tokenEntity.UserId, getFull: true);
-            if (user == null)
-            {
-                await repository.DeleteRefreshTokenAsync(refreshTokenString);
-                context.RemoveRefreshTokenCookie();
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Associated user not found."));
-            }
-
-            var userDto = mapper.Map<UserDto>(user);
-            var jwt = userDto.GenerateJwt(configuration);
-
+            // token expired: delete it from DB and force re-login
             await repository.DeleteRefreshTokenAsync(refreshTokenString);
-
-            var newToken = IdentityManager.GenerateRefreshToken(userDto.Id);
-            await repository.SetRefreshTokenAsync(userDto.Id, newToken);
-
-            context.SetRefreshTokenCookie(newToken);
-
-            var accessToken = new AccessTokenModel
-            {
-                Token = new JwtSecurityTokenHandler().WriteToken(jwt),
-                TokenType = "bearer",
-                ExpiresToken = jwt.ValidTo,
-                UserDto = userDto
-            };
-
-            return Results.Ok(ApiResponse.Success(accessToken));
+            context.RemoveRefreshTokenCookie();
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token expired. Please login again."));
         }
-        catch (Exception e)
+
+        var user = await repository.GetUserByIdAsync(tokenEntity.UserId, getFull: true);
+        if (user == null)
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+            await repository.DeleteRefreshTokenAsync(refreshTokenString);
+            context.RemoveRefreshTokenCookie();
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Associated user not found."));
         }
+
+        var userDto = mapper.Map<UserDto>(user);
+        var jwt = userDto.GenerateJwt(configuration);
+
+        await repository.DeleteRefreshTokenAsync(refreshTokenString);
+
+        var newToken = IdentityManager.GenerateRefreshToken(userDto.Id);
+        await repository.SetRefreshTokenAsync(userDto.Id, newToken);
+
+        context.SetRefreshTokenCookie(newToken);
+
+        var accessToken = new AccessTokenModel
+        {
+            Token = new JwtSecurityTokenHandler().WriteToken(jwt),
+            TokenType = "bearer",
+            ExpiresToken = jwt.ValidTo,
+            UserDto = userDto
+        };
+
+        return Results.Ok(ApiResponse.Success(accessToken));
     }
 
     private static async Task<IResult> Logout(
         HttpContext context,
         [FromServices] IUserRepository repository)
     {
-        try
+        var refreshToken = context.Request.Cookies["refreshToken"];
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "No refresh token cookie found."));
+
+        var existing = await repository.GetRefreshTokenAsync(refreshToken);
+        if (existing != null)
         {
-            var refreshToken = context.Request.Cookies["refreshToken"];
-            if (string.IsNullOrWhiteSpace(refreshToken))
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "No refresh token cookie found."));
-
-            var existing = await repository.GetRefreshTokenAsync(refreshToken);
-            if (existing != null)
-            {
-                await repository.DeleteRefreshTokenAsync(refreshToken);
-            }
-
-            context.RemoveRefreshTokenCookie();
-
-            return Results.Ok(ApiResponse.Success("Logged out (refresh token deleted)."));
+            await repository.DeleteRefreshTokenAsync(refreshToken);
         }
-        catch (Exception e)
-        {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
-        }
+
+        context.RemoveRefreshTokenCookie();
+
+        return Results.Ok(ApiResponse.Success("Logged out (refresh token deleted)."));
     }
 
     private static async Task<IResult> Register(
@@ -227,32 +196,25 @@ public static class UserEndpoints
         [FromServices] IConfiguration configuration,
         [FromServices] IMapper mapper)
     {
-            try
+        // Check username BEFORE mapping to entity
+        var userExist = await repository.IsUserExistedAsync(model.UserName);
+        if (userExist)
         {
-            // Check username BEFORE mapping to entity
-            var userExist = await repository.IsUserExistedAsync(model.UserName);
-            if (userExist)
-            {
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Account already exists."));
-            }
-
-            // Now map to entity after verifying
-            var user = mapper.Map<User>(model);
-
-            // Create user
-            var newUser = await repository.RegisterAsync(user);
-            if (newUser == null)
-            {
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to create user."));
-            }
-
-            var userDto = mapper.Map<UserDto>(newUser);
-            return Results.Ok(ApiResponse.Success(userDto));
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Account already exists."));
         }
-        catch (Exception e)
+
+        // Now map to entity after verifying
+        var user = mapper.Map<User>(model);
+
+        // Create user
+        var newUser = await repository.RegisterAsync(user);
+        if (newUser == null)
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to create user."));
         }
+
+        var userDto = mapper.Map<UserDto>(newUser);
+        return Results.Ok(ApiResponse.Success(userDto));
     }
 
     private static async Task<IResult> GetUsers(
@@ -260,39 +222,24 @@ public static class UserEndpoints
         [FromServices] IUserRepository repository,
         [FromServices] IMapper mapper)
     {
-        try
-        {
-            var userQuery = mapper.Map<UserQuery>(model);
+        var userQuery = mapper.Map<UserQuery>(model);
 
-            var userList = await repository.GetPagedUsersAsync(
-                userQuery,
-                model,
-                p => p.ProjectToType<UserDto>());
+        var userList = await repository.GetPagedUsersAsync(
+            userQuery,
+            model,
+            p => p.ProjectToType<UserDto>());
 
-            return Results.Ok(ApiResponse.Success(userList));
-        }
-        catch (Exception e)
-        {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
-        }   
+        return Results.Ok(ApiResponse.Success(userList));
     }
 
     private static async Task<IResult> GetRoles(
         [FromServices] IUserRepository userRepository,
-        [FromServices] IMapper mapper
-    )
+        [FromServices] IMapper mapper)
     {
-        try
-        {
-            var roles = await userRepository.GetRolesAsync();
-            var listRoles = mapper.Map<IList<RoleDto>>(roles);
+        var roles = await userRepository.GetRolesAsync();
+        var listRoles = mapper.Map<IList<RoleDto>>(roles);
 
-            return Results.Ok(ApiResponse.Success(listRoles));
-        }
-        catch (Exception e)
-        {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
-        }   
+        return Results.Ok(ApiResponse.Success(listRoles));
     }
 
     private static async Task<IResult> ChangePassword(
@@ -301,71 +248,57 @@ public static class UserEndpoints
         [FromServices] IUserRepository repository,
         [FromServices] IMapper mapper)
     {
-        try
+        // Check for authenticated user
+        var identity = context.GetCurrentUser();
+        if (identity == null)
         {
-            // Check for authenticated user
-            var identity = context.GetCurrentUser();
-            if (identity == null)
-            {
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "User not authenticated.")
-                );
-            }
-
-            // Get user from database
-            var user = await repository.GetUserByIdAsync(identity.Id);
-            if (user == null)
-            {
-                return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
-            }
-
-            // Change password
-            if (await repository.ChangePasswordAsync(user, model.OldPassword, model.NewPassword))
-            {
-                var userDto = mapper.Map<UserDto>(user);
-                return Results.Ok(ApiResponse.Success(userDto));
-            }
-
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to change password. Old password may be incorrect."));
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "User not authenticated.")
+            );
         }
-        catch (Exception e)
+
+        // Get user from database
+        var user = await repository.GetUserByIdAsync(identity.Id);
+        if (user == null)
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
         }
+
+        // Change password
+        if (await repository.ChangePasswordAsync(user, model.OldPassword, model.NewPassword))
+        {
+            var userDto = mapper.Map<UserDto>(user);
+            return Results.Ok(ApiResponse.Success(userDto));
+        }
+
+        return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to change password. Old password may be incorrect."));
     }
 
     private static async Task<IResult> UpdateUserRoles(
-        UserRolesEditModel model,
+        [FromBody] UserRolesEditModel model,
         [FromServices] IUserRepository repository,
         [FromServices] IConfiguration configuration,
         [FromServices] IMapper mapper)
     {
-        try
+        var user = await repository.GetUserByIdAsync(model.UserId, getFull: true);
+        if (user == null)
         {
-            var user = await repository.GetUserByIdAsync(model.UserId, getFull: true);
-            if (user == null)
-            {
-                return Results.Ok(ApiResponse.Fail(
-                    HttpStatusCode.NotFound,
-                    "User not found."
-                ));
-            }
-
-            var updatedUser = await repository.UpdateUserRolesAsync(user.Id, model.RolesId);
-
-            if (updatedUser == null)
-            {
-                return Results.Ok(ApiResponse.Fail(
-                    HttpStatusCode.BadRequest,
-                    "Failed to update user roles."
-                ));
-            }
-            
-            var userDto = mapper.Map<UserDto>(updatedUser);
-            return Results.Ok(ApiResponse.Success(userDto));
+            return Results.Ok(ApiResponse.Fail(
+                HttpStatusCode.NotFound,
+                "User not found."
+            ));
         }
-        catch (Exception e)
+
+        var updatedUser = await repository.UpdateUserRolesAsync(user.Id, model.RolesId);
+
+        if (updatedUser == null)
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
+            return Results.Ok(ApiResponse.Fail(
+                HttpStatusCode.BadRequest,
+                "Failed to update user roles."
+            ));
         }
+        
+        var userDto = mapper.Map<UserDto>(updatedUser);
+        return Results.Ok(ApiResponse.Success(userDto));
     }
 }

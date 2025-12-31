@@ -12,7 +12,7 @@ public class StoreDbContext : DbContext
     public DbSet<ProductHistory> ProductHistories { get; set; }
     public DbSet<Feedback> Feedbacks { get; set; }
     public DbSet<Order> Orders { get; set; }
-    public DbSet<OrderItem> OrderItems { get; set; }
+    public DbSet<OrderDetail> OrderItems { get; set; }
     public DbSet<Discount> Discounts { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Supplier> Suppliers { get; set; }

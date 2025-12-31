@@ -51,6 +51,8 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+        builder.Services.AddScoped<IProductRepository, ProductRepository>();
+        builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
         return builder;
     }

@@ -22,7 +22,7 @@ public static class SupplierEndpoints
         builder.MapGet("/", GetPagedSuppliersAsync)
             .WithName("GetPagedSuppliersAsync")
 			.RequireAuthorization("RequireManagerRole")
-            .Produces<ApiResponse<SupplierDto>>();
+            .Produces<ApiResponse<IPagedList<SupplierDto>>>();
 
         #endregion
 
@@ -65,24 +65,17 @@ public static class SupplierEndpoints
         [FromServices] IMapper mapper,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var condition = mapper.Map<SupplierQuery>(model);
+        var condition = mapper.Map<SupplierQuery>(model);
 
-            var supplier = await repository.GetPagedSuppliersAsync(
-                condition,
-                model,
-                q => q.ProjectToType<SupplierDto>(),
-                cancellationToken);
+        var supplier = await repository.GetPagedSuppliersAsync(
+            condition,
+            model,
+            q => q.ProjectToType<SupplierDto>(),
+            cancellationToken);
 
-            var paginationResult = new PaginationResult<SupplierDto>(supplier);
+        var paginationResult = new PaginationResult<SupplierDto>(supplier);
 
-			return Results.Ok(ApiResponse.Success(paginationResult));
-        }
-        catch (Exception e)
-        {
-			return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
-        }
+        return Results.Ok(ApiResponse.Success(paginationResult));
     }
 
     private static async Task<IResult> AddSupplierAsync(
@@ -92,20 +85,13 @@ public static class SupplierEndpoints
         [FromServices] IMapper mapper,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var supplier = mapper.Map<Supplier>(model);
+        var supplier = mapper.Map<Supplier>(model);
 
-            await repository.AddOrUpdateSupplierAsync(supplier, cancellationToken);
+        await repository.AddOrUpdateSupplierAsync(supplier, cancellationToken);
 
-            return Results.Ok(ApiResponse.Success(
-                mapper.Map<SupplierDto>(supplier),
-                HttpStatusCode.Created));
-        }
-        catch (Exception e)
-        {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
-        }
+        return Results.Ok(ApiResponse.Success(
+            mapper.Map<SupplierDto>(supplier),
+            HttpStatusCode.Created));
     }
 
     private static async Task<IResult> UpdateSupplierAsync(
@@ -115,29 +101,21 @@ public static class SupplierEndpoints
         [FromServices] IMapper mapper,
         CancellationToken cancellationToken = default)
     {
-        try
+        var supplier = await repository.GetSupplierByIdAsync(supplierId, cancellationToken);
+        if (supplier == null)
         {
-            var supplier = await repository.GetSupplierByIdAsync(supplierId, cancellationToken);
-            if (supplier == null)
-            {
-                return Results.Ok(ApiResponse.Fail(
-                    HttpStatusCode.NotFound,
-                    $"Cannot find supplier with id: {supplierId}"));
-            }
-
-            mapper.Map(model, supplier);
-
-            await repository.AddOrUpdateSupplierAsync(supplier, cancellationToken);
-
-            return Results.Ok(ApiResponse.Success(
-                mapper.Map<SupplierDto>(supplier),
-                HttpStatusCode.OK));
-
+            return Results.Ok(ApiResponse.Fail(
+                HttpStatusCode.NotFound,
+                $"Cannot find supplier with id: {supplierId}"));
         }
-        catch (Exception e)
-        {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
-        }
+
+        mapper.Map(model, supplier);
+
+        await repository.AddOrUpdateSupplierAsync(supplier, cancellationToken);
+
+        return Results.Ok(ApiResponse.Success(
+            mapper.Map<SupplierDto>(supplier),
+            HttpStatusCode.OK));       
     }
 
     private static async Task<IResult> ToggleDeleteSupplierAsync(
@@ -145,24 +123,18 @@ public static class SupplierEndpoints
         [FromServices] ISupplierRepository repository,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var supplier = await repository.GetSupplierByIdAsync(supplierId, cancellationToken);
+    var supplier = await repository.GetSupplierByIdAsync(supplierId, cancellationToken);
 
-            if (supplier == null)
-            {
-                return Results.Ok(ApiResponse.Fail(
-                    HttpStatusCode.NotFound,
-                    $"Cannot find supplier with id: {supplierId}"));
-            }
+    if (supplier == null)
+    {
+        return Results.Ok(ApiResponse.Fail(
+            HttpStatusCode.NotFound,
+            $"Cannot find supplier with id: {supplierId}"));
+    }
 
-            await repository.ToggleDeleteSupplierAsync(supplierId, cancellationToken);
+    await repository.ToggleDeleteSupplierAsync(supplierId, cancellationToken);
 
-            return Results.Ok(ApiResponse.Success("Supplier deletion status toggled successfully."));
-        }
-        catch (Exception e)
-        {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, e.Message));
-        }
+    return Results.Ok(ApiResponse.Success("Supplier deletion status toggled successfully."));
+
     }
 }
