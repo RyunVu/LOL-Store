@@ -1,10 +1,13 @@
 using LoLStore.API.Models.CategoryModel;
+using LoLStore.API.Models.DiscountModel;
 using LoLStore.API.Models.OrderModel;
 using LoLStore.API.Models.ProductHistoryModel;
 using LoLStore.API.Models.ProductModel;
 using LoLStore.API.Models.SupplierModel;
 using LoLStore.API.Models.UserModel;
 using LoLStore.Core.Entities;
+using LoLStore.Core.Queries;
+using LoLStore.WebAPI.Models.DiscountModel;
 using Mapster;
 
 namespace LoLStore.API.Mapsters;
@@ -68,5 +71,13 @@ public class MapsterConfiguration : IRegister
             .Map(dest => dest.UrlSlug,
                 src => src.Product != null ? src.Product.UrlSlug : string.Empty);
 
+                config.NewConfig<Discount, DiscountDto>();
+
+        config.NewConfig<DiscountEditModel, Discount>()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.CreatedAt)
+            .Ignore(dest => dest.TimesUsed);
+
+        config.NewConfig<DiscountFilterModel, DiscountQuery>();
     }
 }

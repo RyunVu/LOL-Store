@@ -60,6 +60,7 @@ app.MapAccountEndpoints();
 app.MapSupplierEndpoint();
 app.MapProductEndpoint();
 app.MapOrdersEndpoint();
+app.MapDiscountEndpoint();
 
 
 app.Run();
