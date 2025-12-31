@@ -6,7 +6,7 @@ namespace LoLStore.Services.Shop;
 
 public interface IOrderRepository
 {
-    Task<bool> AddOrderAsync(Order order, User user, CancellationToken cancellationToken = default);
+    Task<Order> AddOrderAsync(Order order, User user, CancellationToken cancellationToken = default);
     Task<bool> AddDiscountOrderAsync(Order order, string discountCode, CancellationToken cancellationToken = default);
     Task<Discount> CheckValidDiscountAsync(string discountCode, decimal totalBill, CancellationToken cancellationToken = default);
     Task<Order> AddProductOrderAsync(Guid orderId, IList<Core.Constants.OrderDetailEdit> details, CancellationToken cancellationToken = default);

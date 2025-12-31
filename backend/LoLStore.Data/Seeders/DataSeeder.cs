@@ -78,7 +78,6 @@ public class DataSeeder : IDataSeeder
             throw new InvalidOperationException(
                 "INITIAL_ADMIN_PASSWORD is required when seeding admin users.");
 
-        var adminRole = roles.First(r => r.Name == "Admin");
 
         var adminUser = new User
         {
@@ -90,7 +89,7 @@ public class DataSeeder : IDataSeeder
             UserName = "admin",
             Password = _hasher.HashPassword(adminPassword),
             CreatedDate = DateTime.UtcNow,
-            Roles = new List<Role> { adminRole }
+            Roles = roles.ToList()
         };
 
         _context.Users.Add(adminUser);

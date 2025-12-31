@@ -59,6 +59,7 @@ app.MapCategoriesEndpoint();
 app.MapAccountEndpoints();
 app.MapSupplierEndpoint();
 app.MapProductEndpoint();
+app.MapOrdersEndpoint();
 
 
 app.Run();

@@ -16,7 +16,7 @@ public class OrderRepository : IOrderRepository
         _context = context;
     }
 
-    public async Task<bool> AddOrderAsync(Order order, User user, CancellationToken cancellationToken)
+    public async Task<Order> AddOrderAsync(Order order, User user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(order);
         ArgumentNullException.ThrowIfNull(user);
@@ -30,8 +30,8 @@ public class OrderRepository : IOrderRepository
         order.CodeOrder = $"HD{code}";
 
         _context.Orders.Add(order);
-        var result = await _context.SaveChangesAsync(cancellationToken);
-        return result > 0;
+        await _context.SaveChangesAsync(cancellationToken);
+        return order;
     }
 
     public async Task<Order> AddProductOrderAsync(
