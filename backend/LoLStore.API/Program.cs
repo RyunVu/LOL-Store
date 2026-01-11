@@ -26,7 +26,6 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Global exception handling (should be early)
 app.UseGlobalExceptionHandler();
 
 var shouldSeed =
@@ -39,22 +38,29 @@ if (shouldSeed)
     await app.UseDataSeederAsync();
 }
 
-// Context + base middleware
 app.SetupContext();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "LoL Store API v1");
+        c.RoutePrefix = string.Empty;
+    });
+}
 
-// Auth must come BEFORE status code middleware
+app.UseCors("DevCors");
+
+app.UseStaticFiles();
+
+app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Custom middleware to normalize 401 / 403 responses
 app.UseMiddleware<StatusCodeResponseMiddleware>();
 
-// Remaining pipeline
-app.SetupMiddleware()
-    .SetupRequestPipeline();
-
-// Map endpoints
 app.MapCategoriesEndpoint();
 app.MapAccountEndpoints();
 app.MapSupplierEndpoint();
@@ -62,6 +68,5 @@ app.MapProductEndpoint();
 app.MapOrdersEndpoint();
 app.MapDiscountEndpoint();
 app.MapDashboardEndpoint();
-
 
 app.Run();

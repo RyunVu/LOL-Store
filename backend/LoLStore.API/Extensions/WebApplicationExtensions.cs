@@ -59,28 +59,26 @@ public static class WebApplicationExtensions
         return builder;
     }
 
-    public static WebApplicationBuilder ConfigureCors(this WebApplicationBuilder builder)
+       public static WebApplicationBuilder ConfigureCors(this WebApplicationBuilder builder)
     {
-        var allowedOrigin = builder.Configuration["AllowLocalHost"];
-
-        if (string.IsNullOrWhiteSpace(allowedOrigin))
-        {
-            throw new InvalidOperationException(
-                "AllowLocalHost is not configured."
-            );
-        }
-
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("LoLStoreApp", policy =>
-                policy.WithOrigins(allowedOrigin)
-                    .AllowCredentials()
+            options.AddPolicy("DevCors", policy =>
+            {
+                policy
+                    .WithOrigins(
+                        "http://localhost:3000",
+                        "http://localhost:5173"
+                    )
                     .AllowAnyHeader()
-                    .AllowAnyMethod());
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
         });
 
         return builder;
     }
+    
 
     public static WebApplicationBuilder ConfigureAuthenticationAndAuthorization(this WebApplicationBuilder builder)
     {
@@ -217,34 +215,6 @@ public static class WebApplicationExtensions
 
             await next();
         });
-
-        return app;
-    }
-
-    public static WebApplication SetupMiddleware(this WebApplication app)
-    {
-        app.UseMiddleware<StatusCodeResponseMiddleware>();
-        return app;
-    }
-
-    public static WebApplication SetupRequestPipeline(this WebApplication app)
-    {
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "LoL Store API v1");
-                c.RoutePrefix = string.Empty;
-            });
-        }
-
-        app.UseCors("LoLStoreApp");
-        app.UseStaticFiles();
-        app.UseHttpsRedirection();
-
-        app.UseAuthentication();
-        app.UseAuthorization();
 
         return app;
     }

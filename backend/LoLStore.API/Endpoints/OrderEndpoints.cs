@@ -127,7 +127,9 @@ public static class OrderEndpoints
 
         foreach (var item in model.Detail)
         {
-            if (!await repository.CheckQuantityProductAsync(item.Id, item.Quantity))
+            if (!await repository.CheckQuantityProductAsync(
+                    item.Id,
+                    item.Quantity!.Value)) 
             {
                 var product = await productRepo.GetProductByIdAsync(item.Id);
                 outOfStock.Add(product is null
@@ -160,6 +162,7 @@ public static class OrderEndpoints
         return Results.Ok(
             ApiResponse.Success(mapper.Map<OrderDto>(order)));
     }
+
 
     private static async Task<IResult> GetOrderById(
         [FromRoute] Guid orderId,

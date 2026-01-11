@@ -8,7 +8,7 @@ public interface IOrderRepository
 {
     Task<Order> AddOrderAsync(Order order, User user, CancellationToken cancellationToken = default);
     Task<bool> AddDiscountOrderAsync(Order order, string discountCode, CancellationToken cancellationToken = default);
-    Task<Discount> CheckValidDiscountAsync(string discountCode, decimal totalBill, CancellationToken cancellationToken = default);
+    Task<Discount?> CheckValidDiscountAsync(string discountCode, decimal totalBill, CancellationToken cancellationToken = default);
     Task<Order> AddProductOrderAsync(Guid orderId, IList<Core.Constants.OrderDetailEdit> details, CancellationToken cancellationToken = default);
     Task<Order> GetProductOrderAsync(IList<Core.Constants.OrderDetailEdit> details, CancellationToken cancellationToken = default);
     Task<bool> CheckQuantityProductAsync(Guid productId, int quantity, CancellationToken cancellationToken = default);
