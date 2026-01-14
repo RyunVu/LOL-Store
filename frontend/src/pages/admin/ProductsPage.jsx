@@ -10,7 +10,7 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
       try {
         const data = await getProducts()
-        console.log('Fetched products:', data)
+        // console.log('Fetched products:', data)
         setProducts(data)
       } catch (err) {
         console.error(err)

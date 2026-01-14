@@ -10,7 +10,7 @@ export default function CategorysPage() {
         const fetchCategories = async () => {
             try {
                 const data = await getCategories()
-                console.log('Fetching categories:', data)
+                // console.log('Fetching categories:', data)
                 setCategories(data)
             } catch (err) {
                 console.error(err)

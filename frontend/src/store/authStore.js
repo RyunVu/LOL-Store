@@ -1,49 +1,28 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from 'zustand'
 
-export const useAuthStore = create(
-  persist(
-    (set, get) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
+export const useAuthStore = create((set, get) => ({
+  user: null,
+  isAuthenticated: false,
+  isInitializing: true,
 
-      setAuth: (data) => {
-        set({
-          user: data.user,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          isAuthenticated: true,
-        });
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-      },
+  setAuth: ({ user }) => set({
+    user,
+    isAuthenticated: true,
+    isInitializing: false,
+  }),
 
-      setUser: (user) => set({ user }),
+  finishInit: () => set({
+    isInitializing: false,
+  }),
 
-      logout: () => {
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        });
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-      },
+  logout: () => set({
+    user: null,
+    isAuthenticated: false,
+    isInitializing: false,
+  }),
 
-      isAdmin: () => {
-        const { user } = get();
-        return user?.roles?.includes('Admin') || false;
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    }
-  )
-);
+  isAdmin: () => {
+    const user = get().user
+    return user?.roles?.some(r => r.name === 'Admin') || false
+  },
+}))

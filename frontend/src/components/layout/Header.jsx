@@ -1,17 +1,17 @@
 import { Link } from 'react-router-dom'
-import { useAuthStore } from '@/store/authStore'
+import { useAuth } from '@/hooks/useAuth'
 import { useCartStore } from '@/store/cartStore'
 
 export default function Header() {
-  const { isAuthenticated, user, logout } = useAuthStore()
+  const { isAuthenticated, user, logout } = useAuth()
   const itemCount = useCartStore((state) => state.getItemCount())
 
   return (
-    <header className="bg-dark-900 text-white shadow-lg">
+    <header className="bg-dark-900 text-white shadow-lg sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="text-2xl font-bold text-gold-500">
+          <Link to="/" className="text-2xl font-bold text-gold-500 hover:text-gold-400 transition">
             LoL Store
           </Link>
 
@@ -52,7 +52,7 @@ export default function Header() {
             {/* Auth buttons */}
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <span className="text-sm">Hi, {user?.name || 'User'}</span>
+                <span className="text-sm">Hi, {user?.name || user?.email || 'User'}</span>
                 <button
                   onClick={logout}
                   className="text-sm hover:text-gold-500 transition"
