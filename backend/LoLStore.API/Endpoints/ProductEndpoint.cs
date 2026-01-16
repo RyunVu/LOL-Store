@@ -32,8 +32,6 @@ public static class ProductEndpoint
 			.Produces<ApiResponse<ProductDto>>();
         builder.MapGet("/bySlug/{slug:regex(^[a-z0-9_-]+$)}", GetProductBySlug)			
             .Produces<ApiResponse<ProductDto>>();
-        builder.MapGet("/toggle-active/{id:guid}", ToggleActiveProduct)
-            .RequireAuthorization("RequireManagerRole");
         builder.MapGet("/histories", GetProductHistories)
             .RequireAuthorization("RequireAdminRole")
 			.Produces<ApiResponse<IPagedList<ProductHistoryDto>>>();
@@ -59,6 +57,8 @@ public static class ProductEndpoint
             .AddEndpointFilter<ValidatorFilter<ProductEditModel>>()
             .RequireAuthorization("RequireManagerRole")
 			.Produces<ApiResponse<ProductDto>>();
+        builder.MapPut("/toggle-active/{id:guid}", ToggleActiveProduct)
+            .RequireAuthorization("RequireManagerRole");
         #endregion
 
         #region DELETE

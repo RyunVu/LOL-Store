@@ -176,6 +176,7 @@ public class ProductRepository : IProductRepository
             .AsNoTracking()
             .Include(p => p.OrderItems)
             .Include(p => p.Pictures)
+            .Include(p => p.Categories)
             .AsQueryable();
 
         products = products
@@ -199,23 +200,18 @@ public class ProductRepository : IProductRepository
             .WhereIf(query.Day.HasValue,
                 p => p.CreateDate.Day == query.Day!.Value)
 
-            .WhereIf(query.MinPrice.HasValue && query.MaxPrice.HasValue &&
-                     query.MaxPrice > query.MinPrice,
+            .WhereIf(query.MinPrice.HasValue,
                 p =>
-                    (p.Price - (p.Price * p.Discount / 100m)) >= (decimal)query.MinPrice!.Value &&
-                    (p.Price - (p.Price * p.Discount / 100m)) <= (decimal)query.MaxPrice!.Value)
+                    (p.Price - (p.Price * (decimal)p.Discount / 100m))
+                    >= query.MinPrice.GetValueOrDefault())
+
+            .WhereIf(query.MaxPrice.HasValue,
+                p =>
+                    (p.Price - (p.Price * (decimal)p.Discount / 100m))
+                    <= query.MaxPrice.GetValueOrDefault())
 
             .WhereIf(query.CategoryId.HasValue,
                 p => p.Categories.Any(c => c.Id == query.CategoryId))
-
-            .WhereIf(!string.IsNullOrWhiteSpace(query.CategorySlug),
-                p => p.Categories.Any(c => c.UrlSlug == query.CategorySlug))
-
-            .WhereIf(!string.IsNullOrWhiteSpace(query.SubCategorySlug),
-                p => p.Categories.Any(c =>
-                    query.SubCategorySlug!
-                        .Split(',', StringSplitOptions.TrimEntries)
-                        .Contains(c.UrlSlug)))
 
             .WhereIf(!string.IsNullOrWhiteSpace(query.Keyword),
                 p =>

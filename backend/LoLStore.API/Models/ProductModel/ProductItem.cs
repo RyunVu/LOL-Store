@@ -1,3 +1,5 @@
+using LoLStore.API.Models.PictureModel;
+
 namespace LoLStore.API.Models.ProductModel;
 
 public class ProductItem
@@ -28,5 +30,5 @@ public class ProductItem
 
     public int CountOrder { get; set; }
 
-    // List Images later
+    public IList<PictureDto> Pictures { get; set; } = new List<PictureDto>();
 }

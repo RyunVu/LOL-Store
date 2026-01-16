@@ -119,8 +119,16 @@ public static class WebApplicationExtensions
 
         builder.Services.AddAuthorization(options =>
         {
-            options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
-            options.AddPolicy("RequireManagerRole", policy => policy.RequireRole("Manager"));
+            options.AddPolicy("RequireManagerRole", policy =>
+                policy.RequireAssertion(context =>
+                    context.User.IsInRole("Admin") ||
+                    context.User.IsInRole("Manager")
+                )
+            );
+
+            options.AddPolicy("RequireAdminRole", policy =>
+                policy.RequireRole("Admin")
+            );
         });
 
         return builder;

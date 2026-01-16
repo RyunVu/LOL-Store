@@ -1,4 +1,5 @@
 using LoLStore.API.Models.CategoryModel;
+using LoLStore.API.Models.PictureModel;
 
 namespace LoLStore.API.Models.ProductModel;
 
@@ -32,5 +33,5 @@ public class ProductDto
 	public Guid SupplierId { get; set; }
 
 	public IList<CategoryDto> Categories { get; set; } = new List<CategoryDto>();
-    // Add List Images later
+    public IList<PictureDto> Pictures { get; set; } = new List<PictureDto>();
 }
