@@ -1,23 +1,45 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { lazy } from 'react'
-import RootLayout from '../layouts/RootLayout'
-import DefaultLayout from '@/layouts/DefaultLayout'
-import SuspenseWrapper from '@/components/common/SuspenseWrapper'
-import AdminLayout from '../layouts/AdminLayout'
-import ProtectedRoute from '../components/auth/ProtectedRoute'
 
+import RootLayout from '@/layouts/RootLayout'
+import DefaultLayout from '@/layouts/DefaultLayout'
+import AdminLayout from '@/layouts/AdminLayout'
+import ProtectedRoute from '@/components/auth/ProtectedRoute'
+import SuspenseWrapper from '@/components/common/SuspenseWrapper'
+
+// =====================
 // Public pages
+// =====================
 const HomePage = lazy(() => import('@/pages/public/HomePage'))
 
+// =====================
 // Auth pages
+// =====================
 const LoginPage = lazy(() => import('@/pages/admin/LoginPage'))
 const RegisterPage = lazy(() => import('@/pages/admin/RegisterPage'))
 
+// =====================
 // Admin pages
-const AdminPage = lazy(() => import('@/pages/admin/AdminPage'))
-const ProductsPage = lazy(() => import('@/pages/admin/ProductsPage'))
-const CategorysPage = lazy(() => import('@/pages/admin/CategorysPage'))
+// =====================
+const DashboardPage = lazy(() => import('@/pages/admin/DashboardPage'))
 
+// Products
+const ProductsManagePage = lazy(() =>
+  import('@/pages/admin/products/ProductManagePage')
+)
+const ProductCreatePage = lazy(() =>
+  import('@/pages/admin/products/ProductCreatePage')
+)
+const ProductEditPage = lazy(() =>
+  import('@/pages/admin/products/ProductEditPage')
+)
+
+// Categories
+const CategoryPage = lazy(() => import('@/pages/admin/CategoryPage'))
+
+// =====================
+// Router
+// =====================
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -52,6 +74,10 @@ export const router = createBrowserRouter([
           },
         ],
       },
+
+      // =====================
+      // Admin routes
+      // =====================
       {
         path: '/admin',
         element: (
@@ -64,23 +90,43 @@ export const router = createBrowserRouter([
             index: true,
             element: (
               <SuspenseWrapper>
-                <AdminPage />
+                <DashboardPage />
               </SuspenseWrapper>
             ),
           },
+
+          // Products
           {
             path: 'products',
             element: (
               <SuspenseWrapper>
-                <ProductsPage />
+                <ProductsManagePage />
+              </SuspenseWrapper>
+            ),
+          },
+         {
+            path: 'products/create',
+            element: (
+              <SuspenseWrapper>
+                <ProductCreatePage />
               </SuspenseWrapper>
             ),
           },
           {
+            path: 'products/edit/:id',
+            element: (
+              <SuspenseWrapper>
+                <ProductEditPage />
+              </SuspenseWrapper>
+            ),
+          },
+
+          // Categories
+          {
             path: 'categories',
             element: (
               <SuspenseWrapper>
-                <CategorysPage />
+                <CategoryPage />
               </SuspenseWrapper>
             ),
           },

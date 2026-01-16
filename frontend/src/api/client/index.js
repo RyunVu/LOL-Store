@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { getAccessToken, setAccessToken, clearAccessToken } from './token'
+import refreshClient from './refreshClient'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5132/api',
@@ -14,19 +15,17 @@ let failedQueue = []
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach(promise => {
-    if (error) {
-      promise.reject(error)
-    } else {
-      promise.resolve(token)
-    }
+    error ? promise.reject(error) : promise.resolve(token)
   })
   failedQueue = []
 }
 
-// read token from localStorage
+// --------------------
+// REQUEST INTERCEPTOR
+// --------------------
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken')
+    const token = getAccessToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -35,6 +34,9 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+// --------------------
+// RESPONSE INTERCEPTOR
+// --------------------
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -44,14 +46,14 @@ apiClient.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    // Prevent infinite loop
+    // Prevent infinite retry
     if (originalRequest._retry) {
       return Promise.reject(error)
     }
 
-    // If refresh itself failed → force logout
+    // Refresh failed → force logout
     if (originalRequest.url?.includes('/account/refreshToken')) {
-      localStorage.removeItem('accessToken')
+      clearAccessToken()
       window.location.href = '/login?session=expired'
       return Promise.reject(error)
     }
@@ -69,14 +71,15 @@ apiClient.interceptors.response.use(
     isRefreshing = true
 
     try {
-      const { data } = await apiClient.get('/account/refreshToken')
+      // 🔥 IMPORTANT: use refreshClient (NO Authorization header)
+      const { data } = await refreshClient.get('/account/refreshToken')
 
       const newAccessToken = data?.result?.token
       if (!newAccessToken) {
         throw new Error('No access token returned')
       }
 
-      localStorage.setItem('accessToken', newAccessToken)
+      setAccessToken(newAccessToken)
       processQueue(null, newAccessToken)
 
       originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
@@ -84,7 +87,7 @@ apiClient.interceptors.response.use(
 
     } catch (refreshError) {
       processQueue(refreshError, null)
-      localStorage.removeItem('accessToken')
+      clearAccessToken()
       window.location.href = '/login?session=expired'
       return Promise.reject(refreshError)
     } finally {

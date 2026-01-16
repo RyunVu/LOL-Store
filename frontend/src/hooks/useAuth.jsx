@@ -41,19 +41,6 @@ export function useAuth() {
     }
   }
 
-  const register = async (payload) => {
-    setLoading(true)
-    try {
-      await authApi.register(payload)
-      return await login({
-        identifier: payload.userName,
-        password: payload.password,
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const logout = async () => {
     try {
       await authApi.logout()
@@ -71,7 +58,6 @@ export function useAuth() {
     loading,
     error,
     login,
-    register,
     logout,
     setError,
   }

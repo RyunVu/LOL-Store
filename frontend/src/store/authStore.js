@@ -21,8 +21,9 @@ export const useAuthStore = create((set, get) => ({
     isInitializing: false,
   }),
 
-  isAdmin: () => {
-    const user = get().user
-    return user?.roles?.some(r => r.name === 'Admin') || false
-  },
+  isAdmin: () => get().user?.roles?.some(r => r.name === 'Admin'),
+  isManager: () =>
+    get().user?.roles?.some(r =>
+      r.name === 'Admin' || r.name === 'Manager'
+    ),
 }))
