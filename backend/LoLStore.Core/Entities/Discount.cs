@@ -13,7 +13,7 @@ public class Discount : IEntity
     public bool IsPercentage { get; set; }
     
     // Optional fields - nullable 
-    public int? MinimunOrderAmount { get; set; }
+    public decimal? MinimunOrderAmount { get; set; }
     public int? MaxUses { get; set; }
     
     public int TimesUsed { get; set; }

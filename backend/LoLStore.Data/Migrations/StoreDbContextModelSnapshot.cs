@@ -118,9 +118,9 @@ namespace LoLStore.Data.Migrations
                     b.Property<int?>("MaxUses")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MinimunOrderAmount")
+                    b.Property<decimal?>("MinimunOrderAmount")
                         .HasPrecision(18, 2)
-                        .HasColumnType("int");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");

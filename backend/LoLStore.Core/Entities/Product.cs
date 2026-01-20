@@ -34,6 +34,6 @@ public class Product : IEntity
     public IList<Category> Categories { get; set; } = new List<Category>();
     public IList<OrderDetail> OrderItems { get; set; } = new List<OrderDetail>();
     public IList<Feedback> Feedback { get; set; } = new List<Feedback>();
-    public IList<Picture> Pictures { get; set; } = new List<Picture>();
+    public IList<Picture> Pictures { get; set; } = new List<Picture>(); 
     public IList<ProductHistory> ProductHistories { get; set; } = new List<ProductHistory>();
 }

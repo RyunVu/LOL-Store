@@ -71,9 +71,28 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 			.HasColumnType("datetime2")
 			.HasDefaultValueSql("SYSUTCDATETIME()");
 
-		builder.HasMany(s => s.Categories)
-			.WithMany(s => s.Products)
-			.UsingEntity(pt => pt.ToTable("ProductCategories"));
+		builder.HasMany(p => p.Categories)
+			.WithMany(c => c.Products)
+			.UsingEntity<Dictionary<string, object>>(
+				"ProductCategories",
+				j => j
+					.HasOne<Category>()
+					.WithMany()
+					.HasForeignKey("CategoriesId")
+					.HasConstraintName("FK_ProductCategories_Categories")
+					.OnDelete(DeleteBehavior.Cascade),
+				j => j
+					.HasOne<Product>()
+					.WithMany()
+					.HasForeignKey("ProductsId")
+					.HasConstraintName("FK_ProductCategories_Products")
+					.OnDelete(DeleteBehavior.Cascade),
+				j =>
+				{
+					j.HasKey("ProductsId", "CategoriesId");
+					j.ToTable("ProductCategories");
+				}
+			);
 
 		builder.HasMany(s => s.Pictures)
 			.WithOne(s => s.Product)

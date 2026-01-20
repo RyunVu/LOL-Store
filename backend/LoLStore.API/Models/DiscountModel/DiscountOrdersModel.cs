@@ -6,5 +6,5 @@ public class DiscountOrdersModel
 {
 	public string DiscountCode { get; set; } = string.Empty;
 
-	public IList<OrderDetailEdit> Detail { get; set; }
+	public IList<OrderDetailEdit> Detail { get; set; } = new List<OrderDetailEdit>();
 }

@@ -54,21 +54,26 @@ public class OrderRepository : IOrderRepository
 
         foreach (var item in items)
         {
+            if (!item.Quantity.HasValue || item.Quantity <= 0)
+                throw new InvalidOperationException("Invalid product quantity");
+
+            var quantity = item.Quantity.Value;
+
             var product = products.FirstOrDefault(p => p.Id == item.Id)
                 ?? throw new InvalidOperationException("Product not found");
 
-            if (product.Quantity < item.Quantity)
+            if (product.Quantity < quantity)
                 throw new InvalidOperationException("Insufficient stock");
 
-            product.Quantity -= item.Quantity;
-            product.CountOrder += item.Quantity;
+            product.Quantity -= quantity;
+            product.CountOrder += quantity;
 
             order.OrderItems.Add(new OrderDetail
             {
                 OrderId = order.Id,
                 ProductId = product.Id,
-                Price = product.Price,
-                Quantity = item.Quantity
+                Price = product.Price,  
+                Quantity = quantity
             });
         }
 
@@ -124,11 +129,14 @@ public class OrderRepository : IOrderRepository
         return true;
     }
     
-    public async Task<Discount> CheckValidDiscountAsync(
+    public async Task<Discount?> CheckValidDiscountAsync(
         string discountCode,
         decimal totalBill,
         CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(discountCode))
+            throw new ArgumentException("Discount code is required.", nameof(discountCode));
+
         var discount = await _context.Discounts.FirstOrDefaultAsync(d =>
             d.Code == discountCode &&
             d.IsActive &&
@@ -136,8 +144,8 @@ public class OrderRepository : IOrderRepository
             d.EndDate >= DateTime.UtcNow,
             ct);
 
-        if (discount == null)
-            throw new InvalidOperationException("Invalid discount code");
+        if (discount is null)
+            return null;
 
         if (discount.MaxUses.HasValue &&
             discount.TimesUsed >= discount.MaxUses.Value)
@@ -245,11 +253,14 @@ public class OrderRepository : IOrderRepository
                 .FirstOrDefaultAsync(p => p.Id == item.Id, cancellationToken)
                 ?? throw new InvalidOperationException("Product not found");
 
+            if (!item.Quantity.HasValue || item.Quantity <= 0)
+                throw new InvalidOperationException("Invalid quantity");
+
             order.OrderItems.Add(new OrderDetail
             {
                 ProductId = product.Id,
                 Price = product.Price,
-                Quantity = item.Quantity
+                Quantity = item.Quantity.Value
             });
         }
 

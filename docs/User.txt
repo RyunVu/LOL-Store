@@ -1,4 +1,4 @@
-📝 FULL FLOW CHART
+FULL FLOW CHART
 Login Flow
 Client → POST /login → Repository → Verify Password
    → Generate JWT Token
@@ -18,3 +18,10 @@ Client → POST /refresh-token
    → Reads refreshToken cookie
    → If valid: generate new JWT
    → If invalid: force login again
+
+
+admin
+admin123
+
+bruh
+bruhlmao123

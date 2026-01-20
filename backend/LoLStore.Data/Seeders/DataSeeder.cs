@@ -49,7 +49,7 @@ public class DataSeeder : IDataSeeder
         catch (Exception ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("❌ Database seeding failed");
+            Console.WriteLine("Database seeding failed");
             Console.WriteLine(ex);
             Console.ResetColor();
             throw;
