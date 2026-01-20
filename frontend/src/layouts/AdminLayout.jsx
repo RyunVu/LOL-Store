@@ -31,13 +31,20 @@ export default function AdminLayout() {
         setShowProfile(false)
       }
     }
-    window.addEventListener('click', handleClickOutside)
-    return () => window.removeEventListener('click', handleClickOutside)
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   // Dark mode
   useEffect(() => {
+    const saved = localStorage.getItem('darkMode')
+    if (saved) setDarkMode(saved === 'true')
+  }, [])
+
+  useEffect(() => {
     document.body.classList.toggle('dark', darkMode)
+    localStorage.setItem('darkMode', darkMode)
   }, [darkMode])
 
   const menuItems = [
@@ -57,6 +64,16 @@ export default function AdminLayout() {
     navigate('/login')
   }
 
+  const isActive = (path) => {
+  const current = location.pathname
+
+  if (path === '/admin') {
+    return current === '/admin'
+  }
+
+  return current === path || current.startsWith(path + '/')
+}
+
   return (
     <div>
       {/* SIDEBAR */}
@@ -68,10 +85,10 @@ export default function AdminLayout() {
 
         <ul className="side-menu top">
           {menuItems.map((item) => (
-            <li
-              key={item.path}
-              className={location.pathname === item.path ? 'active' : ''}
-            >
+              <li
+                key={item.path}
+                className={isActive(item.path) ? 'active' : ''}
+              >
               <Link 
                 to={item.path} 
                 data-tooltip={sidebarHidden ? item.label : undefined}
@@ -122,7 +139,7 @@ export default function AdminLayout() {
             title={sidebarHidden ? "Expand Sidebar" : "Collapse Sidebar"}
           ></i>
 
-          <Link to="/" className="nav-link">
+          <Link to="/" className="nav-link flex items-center gap-2">
             <i className="bx bx-store"></i>
             <span>View Store</span>
           </Link>

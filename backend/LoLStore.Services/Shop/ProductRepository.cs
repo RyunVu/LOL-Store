@@ -34,7 +34,8 @@ public class ProductRepository : IProductRepository
         }
         else
         {
-            query = query.Include(p => p.Pictures);
+            query = query.Include(p => p.Pictures)
+                        .Include(p => p.Categories);
         }
 
         return await query.FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);

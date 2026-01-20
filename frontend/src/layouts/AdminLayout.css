@@ -55,27 +55,50 @@ body {
 }
 
 #sidebar .brand {
-  font-size: 24px;
-  font-weight: 700;
   height: 56px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--blue);
+  background: var(--light);
+  text-decoration: none;
   position: sticky;
   top: 0;
-  left: 0;
-  background: var(--light);
   z-index: 500;
-  padding-bottom: 20px;
-  box-sizing: content-box;
-  text-decoration: none;
+  transition: padding 0.3s ease;
 }
 
 #sidebar .brand .bx {
-  min-width: 60px;
+  min-width: 28px;
   display: flex;
   justify-content: center;
+  font-size: 26px;
+}
+
+#sidebar .brand .text {
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 140px;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    max-width 0.3s ease,
+    opacity 0.2s ease,
+    transform 0.3s ease;
+}
+
+#sidebar.hide .brand {
+  justify-content: center;
+  padding: 0;
+}
+
+#sidebar.hide .brand .text {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-8px);
 }
 
 #sidebar .side-menu {
@@ -234,7 +257,8 @@ body {
 }
 
 #sidebar.hide ~ #content {
-  width: calc(100% - 60px);
+  
+  width: calc(100% - 200px);
   left: 60px;
 }
 
@@ -247,7 +271,7 @@ body {
   align-items: center;
   gap: 24px;
   font-family: var(--lato);
-  position: sticky;
+  position: relative;
   top: 0;
   left: 0;
   z-index: 1000;
@@ -345,7 +369,7 @@ body {
 }
 
 #content nav #switch-mode:checked + .switch-lm .ball {
-  transform: translateX(31px);
+  transform: translateX(24px);
   background-color: var(--yellow);
 }
 
@@ -368,7 +392,7 @@ body {
 }
 
 #content nav .notification .bx {
-  animation: shake 0.5s ease-in-out infinite;
+  animation: shake 0.5s ease-in-out 2;
   animation-play-state: paused;
 }
 
@@ -594,12 +618,17 @@ body {
   }
 
   #content nav #switch-mode:checked + .switch-lm .ball {
-    transform: translateX(32px);
+    transform: translateX(24px);
   }
 
   #content nav .notification-menu,
   #content nav .profile-menu {
     right: -20px;
     width: 260px;
+  }
+}
+@media (hover: none) {
+  #sidebar.hide .side-menu li a:hover::after {
+    display: none;
   }
 }

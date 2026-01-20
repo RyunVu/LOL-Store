@@ -23,6 +23,8 @@ export default function ProductEditPage() {
       categoriesApi.getCategories(),
       suppliersApi.getSuppliers(),
     ]).then(([p, categoryRes, supplierRes]) => {
+      
+      console.log('PRODUCT DETAIL RESPONSE:', p)
       setProduct({
         ...p,
         categoryIds: p.categories?.map((x) => x.id) || [],
@@ -34,6 +36,8 @@ export default function ProductEditPage() {
       console.error('Failed to fetch data:', err)
       alert('Failed to load product')
       navigate('/admin/products')
+
+      
     }).finally(() => {
       setFetchLoading(false)
     })
@@ -76,9 +80,10 @@ export default function ProductEditPage() {
   }
 
   return (
-    <div className="max-w-4xl">
-      <div className="mb-6">
-        <button
+    <div className="w-full">
+      <div className="mb-8 space-y-3">
+      {/* Back button */}
+      <button
           onClick={() => navigate('/admin/products')}
           className="text-gray-600 hover:text-gray-800 flex items-center gap-2 mb-4"
         >
@@ -87,9 +92,17 @@ export default function ProductEditPage() {
           </svg>
           Back to Products
         </button>
-        <h1 className="text-3xl font-bold text-gray-900">Edit Product</h1>
-        <p className="text-gray-600 mt-1">Update product information</p>
+
+      {/* Title */}
+      <div>
+        <h1 className="text-3xl font-bold text-white leading-tight">
+          Edit Product
+        </h1>
+        <p className="text-gray-400 mt-1">
+          Update product information
+        </p>
       </div>
+    </div>
 
       <ProductForm
         initialData={product}

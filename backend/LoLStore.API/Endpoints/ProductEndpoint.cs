@@ -101,7 +101,7 @@ public static class ProductEndpoint
         [FromServices] IMapper mapper,
         CancellationToken ct)
     {
-        var product = await repository.GetProductByIdAsync(id, false, ct);
+        var product = await repository.GetProductByIdAsync(id, true, ct);
         return product == null
             ? Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "Product not found"))
             : Results.Ok(ApiResponse.Success(mapper.Map<ProductDto>(product)));

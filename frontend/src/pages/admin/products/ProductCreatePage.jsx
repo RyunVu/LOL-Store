@@ -45,7 +45,7 @@ export default function ProductCreatePage() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="w-full">
       <div className="mb-6">
         <button
           onClick={() => navigate('/admin/products')}
