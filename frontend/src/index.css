@@ -1,15 +1,63 @@
 @import "tailwindcss";
 
-:root {
-  --fs-xs: 12px;
-  --fs-sm: 14px;
-  --fs-base: 16px;
-  --fs-lg: 18px;
-  --fs-xl: 20px;
-  --fs-2xl: 24px;
+@layer base {
+  :root {
+    /* Typography */
+    --fs-xs: 12px;
+    --fs-sm: 14px;
+    --fs-base: 16px;
+    --fs-lg: 18px;
+    --fs-xl: 20px;
+    --fs-2xl: 24px;
+
+    /* Light theme colors */
+    --color-background: #F9FAFB;
+    --color-surface: #FFFFFF;
+    --color-border: #E5E7EB;
+    --color-text-primary: #111827;
+    --color-text-secondary: #4B5563;
+    --color-text-muted: #9CA3AF;
+  }
+
+  .dark {
+    /* Dark theme colors */
+    --color-background: #020617;
+    --color-surface: #111827;
+    --color-border: #374151;
+    --color-text-primary: #F9FAFB;
+    --color-text-secondary: #D1D5DB;
+    --color-text-muted: #9CA3AF;
+  }
+
+  body {
+    font-size: var(--fs-base);
+    line-height: 1.6;
+  }
 }
 
-body {
-  font-size: var(--fs-base);
-  line-height: 1.6;
+/* Semantic utilities (SAFE) */
+@layer utilities {
+  .bg-page {
+    background-color: var(--color-background);
+  }
+
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+
+  .border-default {
+    border-color: var(--color-border);
+  }
+
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+
+  .text-muted {
+    color: var(--color-text-muted);
+  }
 }

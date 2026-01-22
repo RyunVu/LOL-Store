@@ -15,8 +15,8 @@ const HomePage = lazy(() => import('@/pages/public/HomePage'))
 // =====================
 // Auth pages
 // =====================
-const LoginPage = lazy(() => import('@/pages/admin/LoginPage'))
-const RegisterPage = lazy(() => import('@/pages/admin/RegisterPage'))
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
+const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
 
 // =====================
 // Admin pages
@@ -37,9 +37,7 @@ const ProductEditPage = lazy(() =>
 // Categories
 const CategoryPage = lazy(() => import('@/pages/admin/CategoryPage'))
 
-// =====================
-// Router
-// =====================
+
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -75,9 +73,7 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // =====================
       // Admin routes
-      // =====================
       {
         path: '/admin',
         element: (
