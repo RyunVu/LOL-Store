@@ -3,6 +3,7 @@ using LoLStore.API.Mapsters;
 using LoLStore.API.Endpoints;
 using LoLStore.API.Validations;
 using LoLStore.API.Middlewares;
+using LoLStore.Data.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +49,10 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "LoL Store API v1");
         c.RoutePrefix = string.Empty;
     });
+
+    using var scope = app.Services.CreateScope();
+    var devSeeder = scope.ServiceProvider.GetRequiredService<DevDataSeeder>();
+    await devSeeder.SeedExtraProductsAsync();
 }
 
 app.UseCors("DevCors");

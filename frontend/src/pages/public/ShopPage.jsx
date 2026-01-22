@@ -95,7 +95,7 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-primary-900 to-dark-900 text-white py-12">
+      <div className="bg-linear-to-r from-primary-900 to-dark-900 text-white py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Shop</h1>
           <p className="text-lg text-gray-300">
@@ -107,7 +107,7 @@ export default function ShopPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar Filters */}
-          <aside className="lg:w-64 flex-shrink-0">
+          <aside className="lg:w-64 shrink-0">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               {/* Search */}
               <div className="mb-6">

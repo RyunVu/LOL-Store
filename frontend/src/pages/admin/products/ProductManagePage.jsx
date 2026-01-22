@@ -25,9 +25,7 @@ export default function ProductsManagePage() {
 
   const [totalItems, setTotalItems] = useState(0)
 
-  /* =======================
-     Fetch categories
-     ======================= */
+  //   Fetch categories
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -40,9 +38,7 @@ export default function ProductsManagePage() {
     loadCategories()
   }, [])
 
-  /* =======================
-     Fetch products
-     ======================= */
+  //   Fetch products
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
@@ -69,9 +65,7 @@ export default function ProductsManagePage() {
     fetchProducts()
   }, [fetchProducts])
 
-  /* =======================
-     Delete product
-     ======================= */
+  //   Delete product
   const handleDelete = async () => {
     if (!deleteModal.product) return
 
@@ -87,10 +81,32 @@ export default function ProductsManagePage() {
       alert('Failed to delete product')
     }
   }
-
+  
   const totalPages = Math.max(1, Math.ceil(totalItems / filters.pageSize))
 
+  const getPageNumbers = () => {
+    const pages = []
+    const maxVisible = 4
+
+    let start = Math.max(1, filters.pageNumber - 2)
+    let end = Math.min(totalPages, start + maxVisible - 1)
+
+    if (start > 1) pages.push(1)
+    if (start > 2) pages.push('...')
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+
+    if (end < totalPages - 1) pages.push('...')
+    if (end < totalPages) pages.push(totalPages)
+
+    return pages
+  }
+
+
   return (
+    
     <div className="min-h-screen bg-gray-900 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -206,47 +222,46 @@ export default function ProductsManagePage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed border-collapse">
                 <thead className="bg-gray-900">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs text-gray-400">No</th>
-                    <th className="px-6 py-4 text-left text-xs text-gray-400">Product</th>
-                    <th className="px-6 py-4 text-left text-xs text-gray-400">SKU</th>
-                    <th className="px-6 py-4 text-left text-xs text-gray-400">Price</th>
-                    <th className="px-6 py-4 text-left text-xs text-gray-400">Stock</th>
-                    <th className="px-6 py-4 text-left text-xs text-gray-400">Status</th>
-                    <th className="px-6 py-4 text-center text-xs text-gray-400">
-                      Actions
-                    </th>
+                    <th className="px-6 py-4 w-15 whitespace-nowrap text-left text-xs text-gray-400">No</th>
+                    <th className="px-6 py-4 w-80 whitespace-nowrap text-left text-xs text-gray-400">Product</th>
+                    <th className="px-6 py-4 w-40 whitespace-nowrap text-left text-xs text-gray-400">SKU</th>
+                    <th className="px-6 py-4 w-30 whitespace-nowrap text-left text-xs text-gray-400">Price</th>
+                    <th className="px-6 py-4 w-30 whitespace-nowrap text-left text-xs text-gray-400">Stock</th>
+                    <th className="px-6 py-4 w-30 whitespace-nowrap text-left text-xs text-gray-400">Status</th>
+                    <th className="px-6 py-4 w-30 whitespace-nowrap text-center text-xs text-gray-400">Actions</th>
                   </tr>
                 </thead>
+
 
                 <tbody className="divide-y divide-gray-700">
                   {products.map((p, i) => (
                     <tr key={p.id} className="hover:bg-gray-700/40">
-                      <td className="px-6 py-4 text-gray-300">
+                      <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis text-gray-300">
                         {(filters.pageNumber - 1) * filters.pageSize + i + 1}
                       </td>
 
-                      <td className="px-6 py-4 text-white font-medium">
+                      <td className="px-6 py-4 resize-x whitespace-nowrap overflow-hidden text-ellipsis text-white font-medium">
                         {p.name}
                       </td>
 
-                      <td className="px-6 py-4 text-gray-400 font-mono">
+                      <td className="px-6 py-4 resize-x whitespace-nowrap overflow-hidden text-ellipsis text-gray-400 font-mono">
                         {p.sku}
                       </td>
 
-                      <td className="px-6 py-4 text-white">
+                      <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis text-white">
                         ${p.price?.toFixed(2) ?? '0.00'}
                       </td>
 
-                      <td className="px-6 py-4 text-gray-300">
+                      <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis text-gray-300">
                         {p.quantity ?? 0}
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs ${
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs whitespace-nowrap ${
                             p.active
                               ? 'bg-green-900/30 text-green-400'
                               : 'bg-gray-700 text-gray-400'
@@ -256,8 +271,8 @@ export default function ProductsManagePage() {
                         </span>
                       </td>
 
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex justify-center gap-2">
+                      <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                        <div className="flex justify-center gap-5">
                           <Link
                             to={`/admin/products/edit/${p.id}`}
                             className="text-blue-400 hover:text-blue-300"
@@ -281,41 +296,92 @@ export default function ProductsManagePage() {
             </div>
 
             {/* Pagination */}
-            <div className="bg-gray-900 px-6 py-4 flex justify-between items-center">
-              <span className="text-sm text-gray-400">
-                Page {filters.pageNumber} of {totalPages}
-              </span>
+            <div className="bg-gray-900 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Page size */}
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <span>Show</span>
+                <select
+                  value={filters.pageSize}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      pageSize: Number(e.target.value),
+                      pageNumber: 1,
+                    })
+                  }
+                  className="bg-gray-800 border border-gray-700 text-white rounded px-2 py-1"
+                >
+                  {[5, 10, 20, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+                <span>items</span>
+              </div>
 
-              <div className="flex gap-2">
+              {/* Page buttons */}
+              <div className="flex items-center gap-2">
                 <button
                   disabled={filters.pageNumber === 1}
                   onClick={() =>
-                    setFilters({
-                      ...filters,
-                      pageNumber: filters.pageNumber - 1,
-                    })
+                    setFilters({ ...filters, pageNumber: filters.pageNumber - 1 })
                   }
                   className="px-3 py-1 text-sm bg-gray-700 rounded disabled:opacity-40"
                 >
                   Prev
                 </button>
 
+                {getPageNumbers().map((page, i) =>
+                  page === '...' ? (
+                    <span key={i} className="px-2 text-gray-500">…</span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setFilters({ ...filters, pageNumber: page })}
+                      className={`px-3 py-1 text-sm rounded ${
+                      page === filters.pageNumber
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+
                 <button
                   disabled={filters.pageNumber === totalPages}
                   onClick={() =>
-                    setFilters({
-                      ...filters,
-                      pageNumber: filters.pageNumber + 1,
-                    })
+                    setFilters({ ...filters, pageNumber: filters.pageNumber + 1 })
                   }
                   className="px-3 py-1 text-sm bg-gray-700 rounded disabled:opacity-40"
                 >
                   Next
                 </button>
+
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <span>Go to</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const page = Math.min(
+                          totalPages,
+                          Math.max(1, Number(e.target.value))
+                        )
+                        setFilters({ ...filters, pageNumber: page })
+                      }
+                    }}
+                    className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white"
+                  />
+                </div>                
               </div>
             </div>
           </>
-        )}
+          )}
       </div>
 
       {/* Delete Modal */}

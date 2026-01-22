@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import './AdminLayout.css'
+import ScrollToTop from '../components/common/ScrollToTop'
 
 export default function AdminLayout() {
   const location = useLocation()
@@ -221,6 +222,7 @@ export default function AdminLayout() {
 
         {/* MAIN */}
         <main>
+          <ScrollToTop />
           <Outlet />
         </main>
       </section>

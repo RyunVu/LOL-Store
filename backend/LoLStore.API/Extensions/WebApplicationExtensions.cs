@@ -4,6 +4,7 @@ using System.Text;
 using LoLStore.API.Media;
 using LoLStore.API.Middlewares;
 using LoLStore.Data.Contexts;
+using LoLStore.Data.Seeders;
 using LoLStore.Services.Shop;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -55,7 +56,7 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
         builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
         builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
-
+        builder.Services.AddScoped<DevDataSeeder>();
         return builder;
     }
 

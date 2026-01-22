@@ -6,6 +6,7 @@ import DefaultLayout from '@/layouts/DefaultLayout'
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import SuspenseWrapper from '@/components/common/SuspenseWrapper'
+import ShopPage from '../pages/public/ShopPage'
 
 // =====================
 // Public pages
@@ -67,6 +68,14 @@ export const router = createBrowserRouter([
             element: (
               <SuspenseWrapper>
                 <RegisterPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'shop',
+            element: (
+              <SuspenseWrapper>
+                <ShopPage />
               </SuspenseWrapper>
             ),
           },
