@@ -4,11 +4,27 @@ import { productsApi } from '@/api/products.api'
 import { categoriesApi } from '@/api/categories.api'
 import ProductCard from '@/components/products/ProductCard'
 import HeroSection from '@/components/home/HeroSection'
+import AcrylicImage from '@/assets/images/A.jpg'
+import FigureImage from '@/assets/images/F.jpg'
+import StatueImage from '@/assets/images/S.jpg'
 
 export default function HomePage() {
   const [topProducts, setTopProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const getCategoryBackgroundImage = (categoryName) => {
+    switch (categoryName) {
+      case 'Acrylics':
+        return AcrylicImage
+      case 'Figurines':
+        return FigureImage
+      case 'Statues':
+        return StatueImage
+      default:
+        return null
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,14 +64,31 @@ export default function HomePage() {
               <Link
                 key={category.id}
                 to={`/shop?category=${category.id}`}
-                className="group bg-surface-light dark:bg-surface-dark rounded-lg p-6 text-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
+                className="group relative h-40 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 bg-gray-800"
               >
-                <div className="w-16 h-16 mx-auto mb-4 bg-linear-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center text-white text-2xl">
-                  {category.name.charAt(0)}
+                {/* Background image layer */}
+                {getCategoryBackgroundImage(category.name) && (
+                  <div
+                    className="absolute inset-0 bg-center bg-cover bg-no-repeat transition-transform duration-500 group-hover:scale-105"
+                    style={{
+                      backgroundImage: `url(${getCategoryBackgroundImage(category.name)})`,
+                    }}
+                  />
+                )}
+
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/40 to-black/10 group-hover:from-black/80 transition-colors" />
+
+                {/* Content */}
+                <div className="relative z-10 h-full flex flex-col items-center justify-center text-center">
+                  <div className="w-14 h-14 mb-3 opacity-70 bg-white/90 dark:bg-dark-900/80 rounded-full flex items-center justify-center text-xl font-bold text-primary-600 shadow">
+                    {category.name.charAt(0)}
+                  </div>
+
+                  <h3 className="text-white font-semibold text-lg tracking-wide">
+                    {category.name}
+                  </h3>
                 </div>
-                <h3 className="font-semibold text-text-primary-light dark:text-text-primary-dark group-hover:text-primary-500 transition">
-                  {category.name}
-                </h3>
               </Link>
             ))}
           </div>

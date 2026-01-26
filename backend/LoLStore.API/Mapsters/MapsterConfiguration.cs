@@ -47,7 +47,12 @@ public class MapsterConfiguration : IRegister
 			.Map(dest => dest.ProductCount,
 				src => src.Products == null ? 0 : src.Products.Count);
 
-        config.NewConfig<Product, ProductDto>();
+        config.NewConfig<Product, ProductDto>()
+            .Map(dest => dest.Discount, src => src.Discount)
+            .Map(dest => dest.FinalPrice,
+                src => src.Discount > 0
+                    ? src.Price - (src.Price * src.Discount / 100m)
+                    : src.Price);
 		config.NewConfig<ProductEditModel, Product>()
 			.Ignore(s => s.Categories);
 

@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { productsApi } from '@/api/products.api'
 import { categoriesApi } from '@/api/categories.api'
+import { useDebounce } from '@/hooks/useDebounce'
+import AdminPagination from '../../../components/pagination/AdminPagination'
 
 export default function ProductsManagePage() {
   const [products, setProducts] = useState([])
@@ -38,11 +40,28 @@ export default function ProductsManagePage() {
     loadCategories()
   }, [])
 
+  
   //   Fetch products
+
+  const debouncedKeyword = useDebounce(filters.keyword, 300)
+
+  const {
+    pageNumber,
+    pageSize,
+    categoryId,
+    active,
+  } = filters
+
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const params = { ...filters }
+      const params = {
+        pageNumber,
+        pageSize,
+        categoryId,
+        active,
+        keyword: debouncedKeyword,
+      }
 
       Object.keys(params).forEach((key) => {
         if (params[key] === '' || params[key] == null) {
@@ -51,7 +70,6 @@ export default function ProductsManagePage() {
       })
 
       const res = await productsApi.getProducts(params)
-
       setProducts(res?.items ?? [])
       setTotalItems(res?.metadata?.totalItemCount ?? 0)
     } catch (error) {
@@ -59,7 +77,13 @@ export default function ProductsManagePage() {
     } finally {
       setLoading(false)
     }
-  }, [filters])
+  }, [
+    debouncedKeyword,
+    pageNumber,
+    pageSize,
+    categoryId,
+    active,
+  ])
 
   useEffect(() => {
     fetchProducts()
@@ -82,29 +106,6 @@ export default function ProductsManagePage() {
     }
   }
   
-  const totalPages = Math.max(1, Math.ceil(totalItems / filters.pageSize))
-
-  const getPageNumbers = () => {
-    const pages = []
-    const maxVisible = 4
-
-    let start = Math.max(1, filters.pageNumber - 2)
-    let end = Math.min(totalPages, start + maxVisible - 1)
-
-    if (start > 1) pages.push(1)
-    if (start > 2) pages.push('...')
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i)
-    }
-
-    if (end < totalPages - 1) pages.push('...')
-    if (end < totalPages) pages.push(totalPages)
-
-    return pages
-  }
-
-
   return (
     
     <div className="min-h-screen bg-gray-900 p-4 md:p-6">
@@ -142,11 +143,11 @@ export default function ProductsManagePage() {
               className="w-64 bg-gray-900 border border-gray-700 text-sm text-white placeholder-gray-500 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               value={filters.keyword}
               onChange={(e) =>
-                setFilters({
-                  ...filters,
+                setFilters((prev) => ({
+                  ...prev,
                   keyword: e.target.value,
                   pageNumber: 1,
-                })
+                }))
               }
             />
 
@@ -155,11 +156,11 @@ export default function ProductsManagePage() {
               className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
               value={filters.categoryId}
               onChange={(e) =>
-                setFilters({
-                  ...filters,
+                setFilters((prev) => ({
+                  ...prev,
                   categoryId: e.target.value,
                   pageNumber: 1,
-                })
+                }))
               }
             >
               <option value="">All Categories</option>
@@ -175,11 +176,11 @@ export default function ProductsManagePage() {
               className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
               value={filters.active}
               onChange={(e) =>
-                setFilters({
-                  ...filters,
+                setFilters((prev) => ({
+                  ...prev,
                   active: e.target.value,
                   pageNumber: 1,
-                })
+                }))
               }
             >
               <option value="">All Status</option>
@@ -190,15 +191,15 @@ export default function ProductsManagePage() {
             {/* Clear */}
             <button
               onClick={() =>
-                setFilters({
+                setFilters((prev) => ({
                   keyword: '',
                   categoryId: '',
                   minPrice: '',
                   maxPrice: '',
                   active: '',
                   pageNumber: 1,
-                  pageSize: filters.pageSize,
-                })
+                  pageSize: prev.pageSize,
+                }))
               }
               className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition"
             >
@@ -296,90 +297,11 @@ export default function ProductsManagePage() {
             </div>
 
             {/* Pagination */}
-            <div className="bg-gray-900 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              {/* Page size */}
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <span>Show</span>
-                <select
-                  value={filters.pageSize}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      pageSize: Number(e.target.value),
-                      pageNumber: 1,
-                    })
-                  }
-                  className="bg-gray-800 border border-gray-700 text-white rounded px-2 py-1"
-                >
-                  {[5, 10, 20, 50].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-                <span>items</span>
-              </div>
-
-              {/* Page buttons */}
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={filters.pageNumber === 1}
-                  onClick={() =>
-                    setFilters({ ...filters, pageNumber: filters.pageNumber - 1 })
-                  }
-                  className="px-3 py-1 text-sm bg-gray-700 rounded disabled:opacity-40"
-                >
-                  Prev
-                </button>
-
-                {getPageNumbers().map((page, i) =>
-                  page === '...' ? (
-                    <span key={i} className="px-2 text-gray-500">…</span>
-                  ) : (
-                    <button
-                      key={page}
-                      onClick={() => setFilters({ ...filters, pageNumber: page })}
-                      className={`px-3 py-1 text-sm rounded ${
-                      page === filters.pageNumber
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
-
-                <button
-                  disabled={filters.pageNumber === totalPages}
-                  onClick={() =>
-                    setFilters({ ...filters, pageNumber: filters.pageNumber + 1 })
-                  }
-                  className="px-3 py-1 text-sm bg-gray-700 rounded disabled:opacity-40"
-                >
-                  Next
-                </button>
-
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <span>Go to</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={totalPages}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const page = Math.min(
-                          totalPages,
-                          Math.max(1, Number(e.target.value))
-                        )
-                        setFilters({ ...filters, pageNumber: page })
-                      }
-                    }}
-                    className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white"
-                  />
-                </div>                
-              </div>
-            </div>
+            <AdminPagination
+              filters={filters}
+              totalItems={totalItems}
+              setFilters={setFilters}
+            />
           </>
           )}
       </div>

@@ -6,12 +6,12 @@ import DefaultLayout from '@/layouts/DefaultLayout'
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import SuspenseWrapper from '@/components/common/SuspenseWrapper'
-import ShopPage from '../pages/public/ShopPage'
 
 // =====================
 // Public pages
 // =====================
 const HomePage = lazy(() => import('@/pages/public/HomePage'))
+const ShopPage = lazy(() => import('@/pages/public/ShopPage'))
 
 // =====================
 // Auth pages
@@ -36,7 +36,7 @@ const ProductEditPage = lazy(() =>
 )
 
 // Categories
-const CategoryPage = lazy(() => import('@/pages/admin/CategoryPage'))
+const CategoryPage = lazy(() => import('@/pages/admin/categories/CategoryPage'))
 
 
 export const router = createBrowserRouter([

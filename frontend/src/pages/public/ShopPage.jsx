@@ -1,81 +1,147 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { productsApi } from '@/api/products.api'
 import { categoriesApi } from '@/api/categories.api'
-import ProductCard from '@/components/products/ProductCard'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
+import ProductSection from '@/components/products/ProductSection'
+import { useDebounce } from '@/hooks/useDebounce'
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [totalItems, setTotalItems] = useState(0)
-  
-  // Filters
+
   const [filters, setFilters] = useState({
     keyword: searchParams.get('search') || '',
     categoryId: searchParams.get('category') || '',
     minPrice: searchParams.get('minPrice') || '',
     maxPrice: searchParams.get('maxPrice') || '',
     sortBy: searchParams.get('sort') || '',
-    pageNumber: parseInt(searchParams.get('page')) || 1,
+    pageNumber: Number(searchParams.get('page')) || 1,
     pageSize: 20,
   })
 
-  // Fetch categories
+  const debouncedKeyword = useDebounce(filters.keyword, 500)
+
+  const {
+    categoryId,
+    minPrice,
+    maxPrice,
+    sortBy,
+    pageNumber,
+    pageSize,
+  } = filters
+
   useEffect(() => {
     const fetchCategories = async () => {
-      try {
-        const response = await categoriesApi.getCategories()
-        const data = response.result || response
-        setCategories(data.items || data || [])
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-      }
+      const res = await categoriesApi.getCategories()
+      const data = res?.result ?? res
+      setCategories(data?.items ?? [])
     }
     fetchCategories()
   }, [])
 
-  // Fetch products
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true)
-      try {
-        const response = await productsApi.getProducts(filters)
-        const data = response.result || response
-        
-        setProducts(data.items || data || [])
-        setTotalItems(data.metadata?.totalItems || data.length || 0)
-      } catch (error) {
-        console.error('Error fetching products:', error)
-        setProducts([])
-      } finally {
-        setLoading(false)
+  const fetchProducts = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = {
+        keyword: debouncedKeyword,
+        categoryId,
+        minPrice,
+        maxPrice,
+        sortBy,
+        pageNumber,
+        pageSize,
       }
-    }
-    fetchProducts()
-  }, [filters])
+      
+      if (sortBy) {
+        switch (sortBy) {
+          case 'price_asc':
+            params.sortColumn = 'finalPrice' 
+            params.sortOrder = 'asc'
+            break
 
-  // Update URL params when filters change
+          case 'price_desc':
+            params.sortColumn = 'finalPrice'
+            params.sortOrder = 'desc'
+            break
+
+          case 'name_asc':
+            params.sortColumn = 'name'
+            params.sortOrder = 'asc'
+            break
+
+          case 'name_desc':
+            params.sortColumn = 'name'
+            params.sortOrder = 'desc'
+            break
+
+          case 'newest':
+            params.sortColumn = 'createDate'
+            params.sortOrder = 'desc'
+            break
+        }
+      }
+
+      Object.keys(params).forEach(
+        (k) => (params[k] === '' || params[k] == null) && delete params[k]
+      )
+
+      const res = await productsApi.getProducts(params)
+      const data = res?.result ?? res
+
+      setProducts(data?.items ?? [])
+      setTotalItems(data?.metadata?.totalItemCount ?? 0)
+    } finally {
+      setLoading(false)
+    }
+  }, [
+    debouncedKeyword,
+    categoryId,
+    minPrice,
+    maxPrice,
+    sortBy,
+    pageNumber,
+    pageSize,
+  ])
+
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
+
   useEffect(() => {
     const params = {}
+
     if (filters.keyword) params.search = filters.keyword
     if (filters.categoryId) params.category = filters.categoryId
     if (filters.minPrice) params.minPrice = filters.minPrice
     if (filters.maxPrice) params.maxPrice = filters.maxPrice
     if (filters.sortBy) params.sort = filters.sortBy
     if (filters.pageNumber > 1) params.page = filters.pageNumber
-    
+
     setSearchParams(params)
   }, [filters, setSearchParams])
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [key]: value,
-      pageNumber: 1, // Reset to page 1 when filter changes
+      pageNumber: key === 'pageNumber' ? value : 1,
     }))
+    
+    // Scroll to sidebar sticky point when page changes
+    if (key === 'pageNumber') {
+      setTimeout(() => {
+        const sidebarAnchor = document.getElementById('sidebar-anchor')
+        if (sidebarAnchor) {
+          const yOffset = -80 
+          const y = sidebarAnchor.getBoundingClientRect().top + window.pageYOffset + yOffset
+          window.scrollTo({ top: y, behavior: 'smooth' })
+        }
+      }, 100)
+    }
   }
 
   const handleClearFilters = () => {
@@ -90,219 +156,147 @@ export default function ShopPage() {
     })
   }
 
-  const totalPages = Math.ceil(totalItems / filters.pageSize)
+  const totalPages = Math.ceil(totalItems / pageSize)
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Banner */}
+      {/* Hero */}
       <div className="bg-linear-to-r from-primary-900 to-dark-900 text-white py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Shop</h1>
-          <p className="text-lg text-gray-300">
+          <h1 className="text-4xl font-bold mb-4">Shop</h1>
+          <p className="text-gray-300">
             Discover official League of Legends merchandise
           </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filters */}
-          <aside className="lg:w-64 shrink-0">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-              {/* Search */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Search
-                </label>
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={filters.keyword}
-                  onChange={(e) => handleFilterChange('keyword', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
+      <div className="container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
+        {/* Sidebar */}
+        <aside className="lg:w-64 shrink-0" id="sidebar-anchor">
+          <div className="bg-white rounded-lg shadow-sm p-6 lg:sticky lg:top-20">
+            {/* Search */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Search
+              </label>
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={filters.keyword}
+                onChange={(e) =>
+                  handleFilterChange('keyword', e.target.value)
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
 
-              {/* Categories */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                  Categories
-                </h3>
-                <div className="space-y-2">
-                  <label className="flex items-center cursor-pointer group">
+            {/* Categories */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Categories</p>
+              <div className="space-y-2">
+                <label className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
+                  <input
+                    type="radio"
+                    checked={categoryId === ''}
+                    onChange={() => handleFilterChange('categoryId', '')}
+                    className="mr-3 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700">All Categories</span>
+                </label>
+
+                {categories.map((c) => (
+                  <label
+                    key={c.id}
+                    className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded"
+                  >
                     <input
                       type="radio"
-                      name="category"
-                      checked={filters.categoryId === ''}
-                      onChange={() => handleFilterChange('categoryId', '')}
-                      className="mr-2"
+                      checked={categoryId === c.id}
+                      onChange={() => handleFilterChange('categoryId', c.id)}
+                      className="mr-3 text-primary-600 focus:ring-primary-500"
                     />
-                    <span className="text-sm text-gray-700 group-hover:text-primary-600">
-                      All Products
-                    </span>
+                    <span className="text-sm text-gray-700">{c.name}</span>
                   </label>
-                  {categories.map((category) => (
-                    <label 
-                      key={category.id}
-                      className="flex items-center cursor-pointer group"
-                    >
-                      <input
-                        type="radio"
-                        name="category"
-                        checked={filters.categoryId === category.id}
-                        onChange={() => handleFilterChange('categoryId', category.id)}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-gray-700 group-hover:text-primary-600">
-                        {category.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                ))}
               </div>
-
-              {/* Price Range */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                  Price Range
-                </h3>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.minPrice}
-                    onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
-                  />
-                  <span className="text-gray-500 self-center">-</span>
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={filters.maxPrice}
-                    onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              <button
-                onClick={handleClearFilters}
-                className="w-full text-sm text-primary-600 hover:text-primary-700 font-semibold"
-              >
-                Clear All Filters
-              </button>
             </div>
-          </aside>
 
-          {/* Main Content */}
-          <main className="flex-1">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-gray-600">
-                {totalItems} {totalItems === 1 ? 'product' : 'products'} found
-              </p>
-              
-              {/* Sort */}
+            {/* Price Range */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Price Range</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Min Price</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    value={filters.minPrice}
+                    onChange={(e) =>
+                      handleFilterChange('minPrice', e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Max Price</label>
+                  <input
+                    type="number"
+                    placeholder="1000"
+                    min="0"
+                    value={filters.maxPrice}
+                    onChange={(e) =>
+                      handleFilterChange('maxPrice', e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sort By */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Sort By
+              </label>
               <select
                 value={filters.sortBy}
                 onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
-                <option value="">Sort by: Featured</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="name-asc">Name: A to Z</option>
-                <option value="name-desc">Name: Z to A</option>
+                <option value="">Default</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="name_asc">Name: A to Z</option>
+                <option value="name_desc">Name: Z to A</option>
                 <option value="newest">Newest First</option>
               </select>
             </div>
 
-            {/* Loading State */}
-            {loading ? (
-              <div className="flex justify-center items-center py-20">
-                <LoadingSpinner />
-              </div>
-            ) : products.length === 0 ? (
-              /* Empty State */
-              <div className="text-center py-20">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-                  No products found
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Try adjusting your filters or search terms
-                </p>
-                <button
-                  onClick={handleClearFilters}
-                  className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Product Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
+            {/* Clear Filters */}
+            <button
+              onClick={handleClearFilters}
+              className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        </aside>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-2 mt-12">
-                    <button
-                      onClick={() => handleFilterChange('pageNumber', filters.pageNumber - 1)}
-                      disabled={filters.pageNumber === 1}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    
-                    {[...Array(totalPages)].map((_, i) => {
-                      const page = i + 1
-                      // Show first, last, current, and adjacent pages
-                      if (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= filters.pageNumber - 1 && page <= filters.pageNumber + 1)
-                      ) {
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => handleFilterChange('pageNumber', page)}
-                            className={`px-4 py-2 border rounded-lg ${
-                              filters.pageNumber === page
-                                ? 'bg-primary-600 text-white border-primary-600'
-                                : 'border-gray-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        )
-                      } else if (
-                        page === filters.pageNumber - 2 ||
-                        page === filters.pageNumber + 2
-                      ) {
-                        return <span key={page}>...</span>
-                      }
-                      return null
-                    })}
-                    
-                    <button
-                      onClick={() => handleFilterChange('pageNumber', filters.pageNumber + 1)}
-                      disabled={filters.pageNumber === totalPages}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </main>
-        </div>
+        {/* Products */}
+        <main className="flex-1">
+          <ProductSection
+            products={products}
+            loading={loading}
+            page={pageNumber}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            onPageChange={(page) =>
+              handleFilterChange('pageNumber', page)
+            }
+          />
+        </main>
       </div>
     </div>
   )
