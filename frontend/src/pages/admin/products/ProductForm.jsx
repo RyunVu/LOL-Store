@@ -121,16 +121,10 @@ export default function ProductForm({
     const { name, value, type, checked } = e.target
 
     if (name === 'name') {
-      const slug = value
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
 
       setForm(prev => ({
         ...prev,
         name: value,
-        urlSlug: slug,
       }))
       return
     }

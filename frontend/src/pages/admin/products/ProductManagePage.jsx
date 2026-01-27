@@ -31,8 +31,8 @@ export default function ProductsManagePage() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const res = await categoriesApi.getCategories()
-        setCategories(res?.result?.items ?? [])
+      const res = await categoriesApi.getCategoriesByManager()
+      setCategories(res?.items ?? [])
       } catch (err) {
         console.error('Failed to fetch categories:', err)
       }
@@ -244,11 +244,11 @@ export default function ProductsManagePage() {
                         {(filters.pageNumber - 1) * filters.pageSize + i + 1}
                       </td>
 
-                      <td className="px-6 py-4 resize-x whitespace-nowrap overflow-hidden text-ellipsis text-white font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis text-white font-medium">
                         {p.name}
                       </td>
 
-                      <td className="px-6 py-4 resize-x whitespace-nowrap overflow-hidden text-ellipsis text-gray-400 font-mono">
+                      <td className="px-6 py-4 whitespace-nowrap overflow-hidden text-ellipsis text-gray-400 font-mono">
                         {p.sku}
                       </td>
 

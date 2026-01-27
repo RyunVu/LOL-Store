@@ -56,7 +56,7 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
         builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
         builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
-        builder.Services.AddScoped<DevDataSeeder>();
+        builder.Services.AddScoped<ExtraProduct>();
         return builder;
     }
 

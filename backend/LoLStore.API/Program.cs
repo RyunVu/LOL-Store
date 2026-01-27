@@ -7,10 +7,6 @@ using LoLStore.Data.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (builder.Environment.IsDevelopment())
-{
-    DotNetEnv.Env.Load();
-}
 
 builder.Configuration.AddEnvironmentVariables();
 
@@ -30,7 +26,6 @@ var app = builder.Build();
 app.UseGlobalExceptionHandler();
 
 var shouldSeed =
-    builder.Environment.IsDevelopment() ||
     builder.Configuration.GetValue<bool>("SEED_DATABASE");
 
 if (shouldSeed)
@@ -51,7 +46,7 @@ if (app.Environment.IsDevelopment())
     });
 
     using var scope = app.Services.CreateScope();
-    var devSeeder = scope.ServiceProvider.GetRequiredService<DevDataSeeder>();
+    var devSeeder = scope.ServiceProvider.GetRequiredService<ExtraProduct>();
     await devSeeder.SeedExtraProductsAsync();
 }
 

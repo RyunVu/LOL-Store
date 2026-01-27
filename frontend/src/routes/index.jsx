@@ -6,6 +6,8 @@ import DefaultLayout from '@/layouts/DefaultLayout'
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import SuspenseWrapper from '@/components/common/SuspenseWrapper'
+import CategoryCreatePage from '../pages/admin/categories/CategoryCreatePage'
+import CategoryEditPage from '../pages/admin/categories/CategoryEditPage'
 
 // =====================
 // Public pages
@@ -109,22 +111,22 @@ export const router = createBrowserRouter([
               </SuspenseWrapper>
             ),
           },
-         {
-            path: 'products/create',
-            element: (
-              <SuspenseWrapper>
-                <ProductCreatePage />
-              </SuspenseWrapper>
-            ),
-          },
           {
-            path: 'products/edit/:id',
-            element: (
-              <SuspenseWrapper>
-                <ProductEditPage />
-              </SuspenseWrapper>
-            ),
-          },
+              path: 'products/create',
+              element: (
+                <SuspenseWrapper>
+                  <ProductCreatePage />
+                </SuspenseWrapper>
+              ),
+            },
+            {
+              path: 'products/edit/:id',
+              element: (
+                <SuspenseWrapper>
+                  <ProductEditPage />
+                </SuspenseWrapper>
+              ),
+            },
 
           // Categories
           {
@@ -135,6 +137,22 @@ export const router = createBrowserRouter([
               </SuspenseWrapper>
             ),
           },
+           {
+              path: 'categories/create',
+              element: (
+                <SuspenseWrapper>
+                  <CategoryCreatePage />
+                </SuspenseWrapper>
+              ),
+            },
+            {
+              path: 'categories/edit/:id',
+              element: (
+                <SuspenseWrapper>
+                  <CategoryEditPage />
+                </SuspenseWrapper>
+              ),
+            },
         ],
       },
     ],

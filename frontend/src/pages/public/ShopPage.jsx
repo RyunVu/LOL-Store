@@ -36,10 +36,22 @@ export default function ShopPage() {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const res = await categoriesApi.getCategories()
-      const data = res?.result ?? res
-      setCategories(data?.items ?? [])
+      try {
+        const res = await categoriesApi.getCategories()
+        const data = res?.result ?? res
+
+        const visibleCategories =
+          (data?.items ?? []).filter(
+            (c) => !c.isDeleted && c.showOnMenu
+          )
+
+        setCategories(visibleCategories)
+      } catch (error) {
+        console.error('Failed to fetch categories:', error)
+        setCategories([])
+      }
     }
+
     fetchCategories()
   }, [])
 

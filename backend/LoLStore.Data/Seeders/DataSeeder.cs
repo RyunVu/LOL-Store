@@ -1,5 +1,6 @@
 using LoLStore.Core.Entities;
 using LoLStore.Data.Contexts;
+using LoLStore.Data.Seeders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -45,6 +46,20 @@ public class DataSeeder : IDataSeeder
                     await _context.Categories.ToListAsync(),
                     await _context.Suppliers.ToListAsync());
             }
+
+            if (!await _context.Orders.AnyAsync())
+            {
+                var users = await _context.Users.ToListAsync();
+                var products = await _context.Products.ToListAsync();
+                var discounts = await _context.Discounts.ToListAsync();
+
+                var orders = OrderSeeder.Generate(users, products, discounts);
+
+                _context.Orders.AddRange(orders);
+                await _context.SaveChangesAsync();
+            }
+
+
         }
         catch (Exception ex)
         {

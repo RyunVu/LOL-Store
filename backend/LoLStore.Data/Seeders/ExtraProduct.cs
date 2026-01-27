@@ -3,11 +3,11 @@ using LoLStore.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace LoLStore.Data.Seeders;
-public class DevDataSeeder
+public class ExtraProduct
 {
     private readonly StoreDbContext _context;
 
-    public DevDataSeeder(StoreDbContext context)
+    public ExtraProduct(StoreDbContext context)
     {
         _context = context;
     }

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 using LoLStore.Data.Contexts;
@@ -16,6 +17,16 @@ public class ProductRepository : IProductRepository
     }
 
     #region Products
+    private static Expression<Func<Product, bool>> IsPublicVisible()
+    {
+        return p =>
+            p.Active &&
+            !p.IsDeleted &&
+            p.Categories.Any(c =>
+                !c.IsDeleted &&
+                c.ShowOnMenu
+            );
+    }
 
     public async Task<Product?> GetProductByIdAsync(
         Guid productId,
@@ -50,6 +61,7 @@ public class ProductRepository : IProductRepository
             .Include(p => p.Categories)
             .Include(p => p.Pictures)
             .Include(p => p.Supplier)
+            .Where(IsPublicVisible())
             .FirstOrDefaultAsync(p => p.UrlSlug == slug, cancellationToken);
     }
 
@@ -187,10 +199,7 @@ public class ProductRepository : IProductRepository
             .WhereIf(query.IsDeleted.HasValue,
                 p => p.IsDeleted == query.IsDeleted!.Value)
 
-            .WhereIf(query.IsPublished == true,
-                p => p.Active &&
-                     !p.IsDeleted &&
-                     p.Categories.All(c => !c.IsDeleted))
+            .WhereIf(query.IsPublished == true, IsPublicVisible())
 
             .WhereIf(query.Year.HasValue,
                 p => p.CreateDate.Year == query.Year!.Value)
@@ -212,7 +221,10 @@ public class ProductRepository : IProductRepository
                     <= query.MaxPrice.GetValueOrDefault())
 
             .WhereIf(query.CategoryId.HasValue,
-                p => p.Categories.Any(c => c.Id == query.CategoryId))
+                p => p.Categories.Any(c =>
+                    c.Id == query.CategoryId &&
+                    !c.IsDeleted &&
+                    c.ShowOnMenu))
 
             .WhereIf(!string.IsNullOrWhiteSpace(query.Keyword),
                 p =>
@@ -240,6 +252,8 @@ public class ProductRepository : IProductRepository
         return await _context.Set<Product>()
             .AsNoTracking()
             .Include(p => p.Pictures)
+            .Include(p => p.Categories)
+            .Where(IsPublicVisible())
             .Where(p => p.Quantity > 0 && p.Active)
             .OrderByDescending(p => p.CountOrder)
             .Take(numberOfProducts)
@@ -327,6 +341,7 @@ public class ProductRepository : IProductRepository
             .AsNoTracking()
             .Include(p => p.Categories)
             .Include(p => p.Pictures)
+            .Where(IsPublicVisible())
             .Where(p =>
                 p.Id != product.Id &&
                 p.Active &&
