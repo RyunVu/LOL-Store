@@ -53,6 +53,7 @@ export default function AdminLayout() {
     { path: '/admin/products', label: 'Products', icon: 'bxs-shopping-bag-alt' },
     { path: '/admin/categories', label: 'Categories', icon: 'bxs-category' },
     { path: '/admin/orders', label: 'Orders', icon: 'bxs-cart' },
+    { path: '/admin/discounts', label: 'Discounts', icon: 'bxs-offer' },
     { path: '/admin/users', label: 'Users', icon: 'bxs-group' },
   ]
 

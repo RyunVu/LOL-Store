@@ -5,6 +5,7 @@ using LoLStore.API.Models.ProductHistoryModel;
 using LoLStore.API.Models.ProductModel;
 using LoLStore.API.Models.SupplierModel;
 using LoLStore.API.Models.UserModel;
+using LoLStore.Core.Constants;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 using LoLStore.WebAPI.Models.DiscountModel;
@@ -76,13 +77,35 @@ public class MapsterConfiguration : IRegister
             .Map(dest => dest.UrlSlug,
                 src => src.Product != null ? src.Product.UrlSlug : string.Empty);
 
-                config.NewConfig<Discount, DiscountDto>();
+        config.NewConfig<Discount, DiscountDto>()
+            .Map(dest => dest.Status, src =>
+                !src.IsActive
+                    ? DiscountStatus.Inactive
+                    : DateTime.UtcNow < src.StartDate
+                        ? DiscountStatus.Scheduled
+                        : DateTime.UtcNow > src.EndDate
+                            ? DiscountStatus.Expired
+                            : DiscountStatus.Active
+            );
 
         config.NewConfig<DiscountEditModel, Discount>()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.CreatedAt)
-            .Ignore(dest => dest.TimesUsed);
+            .Ignore(dest => dest.IsDeleted)
+            .Ignore(dest => dest.TimesUsed) 
+            .Ignore(dest => dest.UpdatedAt!)
+            .Ignore(dest => dest.DeletedAt!);
 
-        config.NewConfig<DiscountFilterModel, DiscountQuery>();
+        config.NewConfig<DiscountFilterModel, DiscountQuery>()
+            .Map(dest => dest.Code, src => src.Code)
+            .Map(dest => dest.DiscountValue, src => src.DiscountValue)
+            .Map(dest => dest.IsPercentage, src => src.IsPercentage)
+            .Map(dest => dest.MinimunOrderAmount, src => src.MinimunOrderAmount)
+            .Map(dest => dest.IsActive, src => src.IsActive)
+            .Map(dest => dest.StartDate, src => src.StartDate)
+            .Map(dest => dest.EndDate, src => src.EndDate)
+            .Map(dest => dest.Year, src => src.Year)
+            .Map(dest => dest.Month, src => src.Month)
+            .Map(dest => dest.Day, src => src.Day);
     }
 }

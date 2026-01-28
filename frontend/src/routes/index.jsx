@@ -6,8 +6,7 @@ import DefaultLayout from '@/layouts/DefaultLayout'
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import SuspenseWrapper from '@/components/common/SuspenseWrapper'
-import CategoryCreatePage from '../pages/admin/categories/CategoryCreatePage'
-import CategoryEditPage from '../pages/admin/categories/CategoryEditPage'
+import DiscountsManagePage from '../pages/admin/discounts/DiscountManagePage'
 
 // =====================
 // Public pages
@@ -27,19 +26,22 @@ const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
 const DashboardPage = lazy(() => import('@/pages/admin/DashboardPage'))
 
 // Products
-const ProductsManagePage = lazy(() =>
-  import('@/pages/admin/products/ProductManagePage')
+const ProductsManagePage = lazy(() => import('@/pages/admin/products/ProductManagePage')
 )
-const ProductCreatePage = lazy(() =>
-  import('@/pages/admin/products/ProductCreatePage')
+const ProductCreatePage = lazy(() => import('@/pages/admin/products/ProductCreatePage')
 )
-const ProductEditPage = lazy(() =>
-  import('@/pages/admin/products/ProductEditPage')
+const ProductEditPage = lazy(() => import('@/pages/admin/products/ProductEditPage')
 )
 
 // Categories
 const CategoryPage = lazy(() => import('@/pages/admin/categories/CategoryPage'))
+const CategoryCreatePage = lazy(() => import('@/pages/admin/categories/CategoryCreatePage'))
+const CategoryEditPage = lazy(() => import('@/pages/admin/categories/CategoryEditPage'))
 
+// Discounts
+const DiscountPage = lazy(() => import('@/pages/admin/discounts/DiscountManagePage'))
+const DiscountCreatePage = lazy(() => import('@/pages/admin/discounts/DiscountCreatePage'))
+const DiscountEditPage = lazy(() => import('@/pages/admin/discounts/DiscountEditPage'))
 
 export const router = createBrowserRouter([
   {
@@ -150,6 +152,32 @@ export const router = createBrowserRouter([
               element: (
                 <SuspenseWrapper>
                   <CategoryEditPage />
+                </SuspenseWrapper>
+              ),
+            },
+
+            // Discounts
+          {
+            path: 'discounts',
+            element: (
+              <SuspenseWrapper>
+                <DiscountsManagePage />
+              </SuspenseWrapper>
+            ),
+          },
+           {
+              path: 'discounts/create',
+              element: (
+                <SuspenseWrapper>
+                  <DiscountCreatePage />
+                </SuspenseWrapper>
+              ),
+            },
+            {
+              path: 'discounts/edit/:id',
+              element: (
+                <SuspenseWrapper>
+                  <DiscountEditPage />
                 </SuspenseWrapper>
               ),
             },

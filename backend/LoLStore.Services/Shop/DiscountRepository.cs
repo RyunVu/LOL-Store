@@ -15,6 +15,7 @@ public class DiscountRepository : IDiscountRepository
         _context = context;
     }
 
+    // Paging & Filtering
     public async Task<IPagedList<T>> GetPagedDiscountAsync<T>(
         DiscountQuery query,
         IPagingParams pagingParams,
@@ -32,16 +33,22 @@ public class DiscountRepository : IDiscountRepository
 
         return _context.Set<Discount>()
             .AsNoTracking()
+            .Where(d => !d.IsDeleted)
+            .WhereIf(!string.IsNullOrWhiteSpace(query.Code),
+                d => d.Code.Contains(query.Code!.Trim().ToUpper()))
+            .WhereIf(query.IsActive.HasValue,
+                d => d.IsActive == query.IsActive)
             .WhereIf(query.IsPercentage.HasValue,
                 d => d.IsPercentage == query.IsPercentage)
             .WhereIf(query.DiscountValue.HasValue,
                 d => d.DiscountValue == query.DiscountValue)
-            .WhereIf(query.MinPrice.HasValue,
-                d => d.MinimunOrderAmount >= query.MinPrice)
-            .WhereIf(query.StartDate.HasValue,
-                d => d.StartDate >= query.StartDate)
-            .WhereIf(query.EndDate.HasValue,
-                d => d.EndDate <= query.EndDate)
+            .WhereIf(query.MinimunOrderAmount.HasValue,
+                d => d.MinimunOrderAmount >= query.MinimunOrderAmount)
+            .WhereIf(query.IsActive == true,
+                d => d.IsActive &&
+                     d.StartDate <= now &&
+                     d.EndDate >= now &&
+                     (d.MaxUses == null || d.TimesUsed < d.MaxUses))
             .WhereIf(query.Day.HasValue,
                 d => d.CreatedAt.Day == query.Day)
             .WhereIf(query.Month.HasValue,
@@ -50,68 +57,116 @@ public class DiscountRepository : IDiscountRepository
                 d => d.CreatedAt.Year == query.Year);
     }
 
-    public async Task<Discount?> GetDiscountByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    // Queries
+    public async Task<Discount?> GetDiscountByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Set<Discount>()
             .AsNoTracking()
-            .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(
+                d => d.Id == id && !d.IsDeleted,
+                cancellationToken);
     }
 
-    public async Task<Discount?> GetDiscountByCodeAsync(string code, CancellationToken cancellationToken = default)
+    public async Task<Discount?> GetDiscountByCodeAsync(
+        string code,
+        CancellationToken cancellationToken = default)
     {
+        var normalizedCode = code.Trim().ToUpper();
+
         return await _context.Set<Discount>()
             .AsNoTracking()
-            .FirstOrDefaultAsync(d => d.Code.ToLower() == code.ToLower(), cancellationToken);
+            .FirstOrDefaultAsync(
+                d => d.Code == normalizedCode &&
+                    !d.IsDeleted,
+                cancellationToken);
     }
 
+    // Create / Update
     public async Task<Discount?> AddOrUpdateDiscountAsync(
         Discount discount,
         CancellationToken cancellationToken = default)
     {
-        var exists = await _context.Set<Discount>()
-            .AnyAsync(d => d.Id == discount.Id, cancellationToken);
+        discount.Code = discount.Code.Trim().ToUpper();
 
-        if (exists)
-        {
-            _context.Set<Discount>().Update(discount);
-        }
-        else
+        var existing = await _context.Set<Discount>()
+            .FirstOrDefaultAsync(
+                d => d.Id == discount.Id && !d.IsDeleted,
+                cancellationToken);
+
+        // CREATE
+        if (existing == null)
         {
             discount.Id = Guid.NewGuid();
             discount.CreatedAt = DateTime.UtcNow;
-            await _context.Set<Discount>().AddAsync(discount, cancellationToken);
+            discount.IsDeleted = false;
+
+            await _context.Set<Discount>()
+                .AddAsync(discount, cancellationToken);
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return discount;
         }
 
+        // UPDATE (prevent expired discount edits)
+        if (existing.EndDate < DateTime.UtcNow)
+            throw new InvalidOperationException("Cannot update an expired discount.");
+
+        existing.Code = discount.Code;
+        existing.DiscountValue = discount.DiscountValue;
+        existing.IsPercentage = discount.IsPercentage;
+        existing.MinimunOrderAmount = discount.MinimunOrderAmount;
+        existing.MaxUses = discount.MaxUses;
+        existing.StartDate = discount.StartDate;
+        existing.EndDate = discount.EndDate;
+        existing.IsActive = discount.IsActive;
+        existing.UpdatedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync(cancellationToken);
-        return discount;
+        return existing;
     }
 
-    public async Task<bool> ToggleActiveAsync(Guid id, CancellationToken cancellationToken = default)
+    // State Changes
+    public async Task<bool> ToggleActiveAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Set<Discount>()
-            .Where(d => d.Id == id)
+            .Where(d => d.Id == id && !d.IsDeleted)
             .ExecuteUpdateAsync(
-                d => d.SetProperty(x => x.IsActive, x => !x.IsActive),
+                d => d.SetProperty(
+                    x => x.IsActive,
+                    x => !x.IsActive),
                 cancellationToken) > 0;
     }
 
-    public async Task<bool> DeleteDiscountAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteDiscountAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Set<Discount>()
-            .Where(d => d.Id == id)
-            .ExecuteDeleteAsync(cancellationToken) > 0;
+            .Where(d => d.Id == id && !d.IsDeleted)
+            .ExecuteUpdateAsync(d =>
+                d.SetProperty(x => x.IsDeleted, true)
+                 .SetProperty(x => x.IsActive, false)
+                 .SetProperty(x => x.DeletedAt, DateTime.UtcNow),
+                cancellationToken) > 0;
     }
 
+    // Validation
     public async Task<bool> IsDiscountExistedAsync(
         Guid id,
         string code,
         CancellationToken cancellationToken = default)
     {
+        var normalizedCode = code.Trim().ToUpper();
+
         return await _context.Set<Discount>()
             .AnyAsync(d =>
+                !d.IsDeleted &&
                 d.Id != id &&
-                d.Code.ToLower() == code.ToLower(),
+                d.Code == normalizedCode,
                 cancellationToken);
     }
-
 }
