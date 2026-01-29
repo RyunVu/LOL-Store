@@ -24,7 +24,7 @@ public class ProductRepository : IProductRepository
             !p.IsDeleted &&
             p.Categories.Any(c =>
                 !c.IsDeleted &&
-                c.ShowOnMenu
+                c.IsActive
             );
     }
 
@@ -224,7 +224,7 @@ public class ProductRepository : IProductRepository
                 p => p.Categories.Any(c =>
                     c.Id == query.CategoryId &&
                     !c.IsDeleted &&
-                    c.ShowOnMenu))
+                    c.IsActive))
 
             .WhereIf(!string.IsNullOrWhiteSpace(query.Keyword),
                 p =>

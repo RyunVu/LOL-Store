@@ -1,7 +1,7 @@
 using LoLStore.Core.Contracts;
 using LoLStore.Core.Entities;
 
-namespace LoLStore.Services.Shop.Services;
+namespace LoLStore.Services.Shop.Discounts;
 
 public interface IDiscountService
 {

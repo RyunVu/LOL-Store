@@ -34,7 +34,7 @@ const ProductEditPage = lazy(() => import('@/pages/admin/products/ProductEditPag
 )
 
 // Categories
-const CategoryPage = lazy(() => import('@/pages/admin/categories/CategoryPage'))
+const CategoryPage = lazy(() => import('@/pages/admin/categories/CategoryManagePage'))
 const CategoryCreatePage = lazy(() => import('@/pages/admin/categories/CategoryCreatePage'))
 const CategoryEditPage = lazy(() => import('@/pages/admin/categories/CategoryEditPage'))
 

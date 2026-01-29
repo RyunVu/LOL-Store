@@ -4,7 +4,7 @@ using LoLStore.Data.Contexts;
 using LoLStore.Services.Extensions;
 using Microsoft.EntityFrameworkCore;
 
-namespace LoLStore.Services.Shop;
+namespace LoLStore.Services.Shop.Discounts;
 
 public class DiscountRepository : IDiscountRepository
 {
@@ -98,7 +98,6 @@ public class DiscountRepository : IDiscountRepository
         // CREATE
         if (existing == null)
         {
-            discount.Id = Guid.NewGuid();
             discount.CreatedAt = DateTime.UtcNow;
             discount.IsDeleted = false;
 

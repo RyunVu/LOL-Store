@@ -42,8 +42,11 @@ export default function ShopPage() {
 
         const visibleCategories =
           (data?.items ?? []).filter(
-            (c) => !c.isDeleted && c.showOnMenu
+            (c) => c.isActive
           )
+        
+        console.log(visibleCategories);
+        
 
         setCategories(visibleCategories)
       } catch (error) {

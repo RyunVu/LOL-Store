@@ -6,6 +6,11 @@ export const categoriesApi = {
     return data.result
   },
 
+  getCategoriesByManager: async (params = {}) => {
+    const { data } = await apiClient.get('/categories/byManager', { params })
+    return data.result
+  },
+
   getCategoryBySlug: async (slug) => {
     if (!slug) throw new Error('Category slug is required')
     const { data } = await apiClient.get(`/categories/slug/${slug}`)
@@ -25,41 +30,30 @@ export const categoriesApi = {
     return data.result
   },
 
-  getCategoriesByManager: async (params = {}) => {
-    const { data } = await apiClient.get('/categories/byManager', { params })
-    return data.result
-  },
-
   createCategory: async (categoryData) => {
     const { data } = await apiClient.post('/categories', categoryData)
+    // backend returns Guid
     return data.result
   },
 
   updateCategory: async (id, categoryData) => {
     if (!id) throw new Error('Category id is required')
-    const { data } = await apiClient.put(`/categories/${id}`, categoryData)
-    return data.result
+    await apiClient.put(`/categories/${id}`, categoryData)
+    // no return value
   },
 
-  toggleShowOnMenu: async (id) => {
+  toggleActive: async (id) => {
     if (!id) throw new Error('Category id is required')
-    const { data } = await apiClient.get(
-      `/categories/toggleShowOnMenu/${id}`
-    )
-    return data.result
+    await apiClient.get(`/categories/toggleShowOnMenu/${id}`)
   },
 
-  softDeleteToggle: async (id) => {
+  toggleSoftDeleteCategory: async (id) => {
     if (!id) throw new Error('Category id is required')
-    const { data } = await apiClient.delete(
-      `/categories/SoftDeleteToggle/${id}`
-    )
-    return data.result
+    await apiClient.delete(`/categories/SoftDeleteToggle/${id}`)
   },
 
-  deleteCategory: async (id) => {
+  deleteCategoryPermanently: async (id) => {
     if (!id) throw new Error('Category id is required')
-    const { data } = await apiClient.delete(`/categories/${id}`)
-    return data.result
+    await apiClient.delete(`/categories/${id}`)
   },
 }

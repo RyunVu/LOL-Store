@@ -6,6 +6,7 @@ using LoLStore.API.Models.ProductModel;
 using LoLStore.API.Models.SupplierModel;
 using LoLStore.API.Models.UserModel;
 using LoLStore.Core.Constants;
+using LoLStore.Core.DTO.Categories;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 using LoLStore.WebAPI.Models.DiscountModel;
@@ -17,9 +18,33 @@ public class MapsterConfiguration : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
+        config.NewConfig<Category, CategoryAdminDto>()
+            .Map(dest => dest.ProductCount,
+                src => src.Products == null ? 0 : src.Products.Count);
+
         config.NewConfig<Category, CategoryDto>()
             .Map(dest => dest.ProductCount,
-              src => src.Products == null ? 0 : src.Products.Count);
+                src => src.Products == null ? 0 : src.Products.Count);
+
+        config.NewConfig<CategoryEditModel, CreateCategoryDto>();
+
+        config.NewConfig<(Guid id, CategoryEditModel model), UpdateCategoryDto>()
+            .Map(dest => dest.Id, src => src.id)
+            .Map(dest => dest.Name, src => src.model.Name)
+            .Map(dest => dest.Description, src => src.model.Description)
+            .Map(dest => dest.IsActive, src => src.model.IsActive);
+
+         config.NewConfig<CategoryFilterModel, CategoryQuery>()
+            .Map(dest => dest.Keyword, src => src.Keyword)
+            .Map(dest => dest.IsActive, src => src.IsActive);
+
+
+        config.NewConfig<CategoryManagerFilterModel, CategoryQuery>()
+            .Map(dest => dest.Keyword, src => src.Keyword)
+            .Map(dest => dest.IsActive, src => src.IsActive)
+            .Map(dest => dest.IsDeleted, src => src.IsDeleted)
+            .Map(dest => dest.DateFilter, src => src.DateFilter);
+
 
         config.NewConfig<User, UserDto>()
             .AfterMapping((src, dest) =>

@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 
 const EMPTY_FORM = {
   name: '',
-  urlSlug: '',
   description: '',
-  showOnMenu: true,
+  isActive: true,
 }
 
 export default function CategoryForm({
@@ -56,7 +55,7 @@ export default function CategoryForm({
         name: form.name,
         urlSlug: form.urlSlug,
         description: form.description,
-        showOnMenu: form.showOnMenu,
+        isActive: form.isActive,
     }
 
     onSubmit(payload)
@@ -125,8 +124,8 @@ export default function CategoryForm({
         <label className="flex items-center gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
-            name="showOnMenu"
-            checked={form.showOnMenu}
+            name="isActive"
+            checked={form.isActive}
             onChange={handleChange}
             className="w-5 h-5 accent-blue-600"
           />

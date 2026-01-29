@@ -4,5 +4,5 @@ public class CategoryEditModel
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public bool ShowOnMenu{ get; set; }
+    public bool IsActive{ get; set; }
 }

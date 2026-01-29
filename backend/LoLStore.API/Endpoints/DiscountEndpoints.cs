@@ -5,7 +5,7 @@ using LoLStore.Core.Contracts;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 using LoLStore.Services.Shop;
-using LoLStore.Services.Shop.Services;
+using LoLStore.Services.Shop.Discounts;
 using LoLStore.WebAPI.Models.DiscountModel;
 using Mapster;
 using MapsterMapper;

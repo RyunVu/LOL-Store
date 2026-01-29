@@ -9,7 +9,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
 
-        "SEED_DATABASE": "true",
+        "SEED_DATABASE": "false",
         "INITIAL_ADMIN_PASSWORD": "admin123",
 
         "Jwt__Key": "LoLStore_SUPER_SECURE_256_BIT_SECRET_KEY_2025",
@@ -31,7 +31,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
 
-        "SEED_DATABASE": "true",
+        "SEED_DATABASE": "false",
         "INITIAL_ADMIN_PASSWORD": "admin123",
 
         "Jwt__Key": "LoLStore_SUPER_SECURE_256_BIT_SECRET_KEY_2025",

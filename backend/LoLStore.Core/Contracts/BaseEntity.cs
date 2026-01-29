@@ -2,7 +2,7 @@ namespace LoLStore.Core.Contracts;
 
 public abstract class BaseEntity : IEntity
 {
-    public Guid Id { get; set; }
+    public Guid Id { get; protected set; } = Guid.NewGuid();
 
     // Audit
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

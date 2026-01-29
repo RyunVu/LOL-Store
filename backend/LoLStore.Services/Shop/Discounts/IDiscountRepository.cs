@@ -1,7 +1,7 @@
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 
-namespace LoLStore.Services.Shop;
+namespace LoLStore.Services.Shop.Discounts;
 
 public interface IDiscountRepository
 {

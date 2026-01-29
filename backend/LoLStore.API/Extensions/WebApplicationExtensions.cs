@@ -2,10 +2,11 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using LoLStore.API.Media;
-using LoLStore.API.Middlewares;
 using LoLStore.Data.Contexts;
 using LoLStore.Data.Seeders;
 using LoLStore.Services.Shop;
+using LoLStore.Services.Shop.Categories;
+using LoLStore.Services.Shop.Discounts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -50,6 +51,8 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
         builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+        builder.Services.AddScoped<ICategoryService, CategoryService>();
+
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
         builder.Services.AddScoped<IProductRepository, ProductRepository>();

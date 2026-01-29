@@ -4,6 +4,7 @@ using LoLStore.API.Endpoints;
 using LoLStore.API.Validations;
 using LoLStore.API.Middlewares;
 using LoLStore.Data.Seeders;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +20,13 @@ builder
     .ConfigureMapster()
     .ConfigureFluentValidation(); 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
 
 var app = builder.Build();
 
