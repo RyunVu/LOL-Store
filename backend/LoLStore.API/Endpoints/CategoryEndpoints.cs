@@ -1,10 +1,12 @@
 using System.Net;
-using Azure;
 using LoLStore.API.Models;
 using LoLStore.API.Models.CategoryModel;
+using LoLStore.Core.Constants;
+using LoLStore.Core.DTO.Categories;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
-using LoLStore.Services.Shop;
+using LoLStore.Services.Helpers;
+using LoLStore.Services.Shop.Categories;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +27,7 @@ public static class CategoryEndpoints
 
         builder.MapGet("/byManager", GetCategoriesByManager)
             .RequireAuthorization("RequireManagerRole")
-            .Produces<ApiResponse<IPagedList<CategoryDto>>>();
+            .Produces<ApiResponse<IPagedList<CategoryAdminDto>>>();
 
         builder.MapGet("/{id:guid}", GetCategoryById)
             .Produces<ApiResponse<CategoryDto>>();
@@ -60,7 +62,7 @@ public static class CategoryEndpoints
         builder.MapDelete("/SoftDeleteToggle/{id:guid}", SoftDeleteCategoryToggle)
             .RequireAuthorization("RequireManagerRole");
 
-        builder.MapDelete("/{id:guid}", DeleteCategory)
+        builder.MapDelete("/{id:guid}", DeleteCategoryPermanently)
             .RequireAuthorization("RequireManagerRole");
 
         #endregion
@@ -88,19 +90,22 @@ public static class CategoryEndpoints
     }
 
     private static async Task<IResult> GetCategoriesByManager(
-        [AsParameters] CategoryFilterModel model,
+        [AsParameters] CategoryManagerFilterModel model,
         [FromServices] ICategoryRepository repository,
         [FromServices] IMapper mapper)
     {
         var query = mapper.Map<CategoryQuery>(model);
 
-        var products =
+        model.SortColumn =
+            SortColumnResolver.Resolve<Category>(model.DateFilter, nameof(Category.Name));
+
+        var categories =
             await repository.GetPagedCategoriesAsync(
                 query: query,
                 pagingParams: model,
-                mapper: p => p.ProjectToType<CategoryDto>());
+                mapper: p => p.ProjectToType<CategoryAdminDto>());
 
-        var paginationResult = new PaginationResult<CategoryDto>(products);
+        var paginationResult = new PaginationResult<CategoryAdminDto>(categories);
 
         return Results.Ok(ApiResponse.Success(paginationResult));
     }
@@ -110,13 +115,13 @@ public static class CategoryEndpoints
 		[FromServices] ICategoryRepository repository,
 		[FromServices] IMapper mapper)
     {
-        var category = await repository.GetCategoryByIdAsync(id);
+        var category = await repository.GetByIdAsync(id);
 
         if (category == null)
         {
             return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.BadRequest,
-                "Failed to update category."
+                HttpStatusCode.NotFound,
+                "Category not found."
             ));
         }
         var categoryItem = mapper.Map<CategoryDto>(category);
@@ -124,27 +129,25 @@ public static class CategoryEndpoints
         return category == null
             ? Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "Category not exist"))
             : Results.Ok(ApiResponse.Success(categoryItem));
-}
+    }
 
     private static async Task<IResult> GetCategoryBySlug(
         [FromRoute] string slug,
         [FromServices] ICategoryRepository repository,
         [FromServices] IMapper mapper)
     {
-        var category = await repository.GetCategoryBySlugAsync(slug, true);
+        var category = await repository.GetActiveBySlugAsync(slug);
 
         if (category == null)
         {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.BadRequest,
-                "Failed to get category."
-            ));
+            return Results.Ok(
+                ApiResponse.Fail(HttpStatusCode.NotFound, "Category not found.")
+            );
         }
-        var categoryItem = mapper.Map<CategoryDto>(category);
 
-        return category == null
-            ? Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "Category is hidden or is not existed."))
-            : Results.Ok(ApiResponse.Success(categoryItem));
+        return Results.Ok(
+            ApiResponse.Success(mapper.Map<CategoryDto>(category))
+        );
     }
 
     private static async Task<IResult> GetRelatedCategories(
@@ -163,85 +166,64 @@ public static class CategoryEndpoints
     
     private static async Task<IResult> ToggleShowOnMenu(
         [FromRoute] Guid id,
-        [FromServices] ICategoryRepository repository)
+        [FromServices] ICategoryService service)
     {
-        if (await repository.ToggleShowOnMenuAsync(id).ConfigureAwait(false))
-            return Results.Ok(ApiResponse.Success("Toggle state successfully.", HttpStatusCode.NoContent));
-        
-        return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "Category not exist"));
-        
+        await service.ToggleActiveAsync(id);
+
+        return Results.Ok(
+            ApiResponse.Success("Category visibility toggled.", HttpStatusCode.NoContent)
+        );
     }
 
     private static async Task<IResult> AddCategory(
         CategoryEditModel model,
-        [FromServices] ICategoryRepository repository,
-        [FromServices] IMapper mapper)
+        ICategoryService service,
+        IMapper mapper)
     {
-        if (await repository.IsCategoryNameExistedAsync(model.Name, Guid.Empty))
-        {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.Conflict,
-                $"Exist category with name: `{model.Name}`"));
-        }
+        var dto = mapper.Map<CreateCategoryDto>(model);
+        var result = await service.CreateAsync(dto);
 
-        var category = mapper.Map<Category>(model);
-
-        await repository.AddOrUpdateCategoryAsync(category);
-
-        return Results.Ok(ApiResponse.Success(mapper.Map<CategoryDto>(category), HttpStatusCode.Created));
+        return Results.Created(
+            $"/categories/{result}",
+            ApiResponse.Success(result)
+        );
     }
 
     private static async Task<IResult> UpdateCategory(
         [FromRoute] Guid id,
         CategoryEditModel model,
-        [FromServices] ICategoryRepository repository,
+        [FromServices] ICategoryService service,
         [FromServices] IMapper mapper)
     {
-        if (await repository.IsCategoryNameExistedAsync(model.Name, id))
-        {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.Conflict,
-                $"Category already exists with name: `{model.Name}`"));
-        }
+        var dto = mapper.Map<UpdateCategoryDto>((id, model));
 
-        var category = mapper.Map<Category>(model);
-        category.Id = id;
+        await service.UpdateAsync(dto);
 
-        return await repository.AddOrUpdateCategoryAsync(category) != null
-            ? Results.Ok(ApiResponse.Success("Category Updated!", HttpStatusCode.NoContent))
-            : Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound));
+        return Results.Ok(
+            ApiResponse.Success("Category updated successfully.", HttpStatusCode.NoContent)
+        );
     }
 
     private static async Task<IResult> SoftDeleteCategoryToggle(
         [FromRoute] Guid id,
-        [FromServices] ICategoryRepository repository)
+        [FromServices] ICategoryService service)
     {
-        if (await repository.SoftDeleteToggleCategoryAsync(id).ConfigureAwait(false))
-        {
-            return Results.Ok(ApiResponse.Success("Category soft-delete state toggled successfully!", HttpStatusCode.NoContent));
-        }
-        return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "Category does not exist!"));
+        await service.ToggleSoftDeleteAsync(id);
+
+        return Results.Ok(
+            ApiResponse.Success("Category soft-deleted successfully.", HttpStatusCode.NoContent)
+        );
     }
 
-    private static async Task<IResult> DeleteCategory(
+    private static async Task<IResult> DeleteCategoryPermanently(
         [FromRoute] Guid id,
-        [FromServices] ICategoryRepository repository)
+        [FromServices] ICategoryService service)
     {
-        var category = await repository.GetCategoryByIdAsync(id);
+        await service.DeletePermanentlyAsync(id);
 
-        if (category == null)
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.NotFound,
-                $"Category not Existed!"
-            ));
-        else if (!category.IsDeleted)
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.NotAcceptable,
-                $"Category is not marked as soft-deleted."
-            ));
-
-        await repository.HardDeleteCategoryAsync(id);
-
-        return Results.Ok(ApiResponse.Success("Category deleted successfully.", HttpStatusCode.NoContent));
+        return Results.Ok(
+            ApiResponse.Success("Category deleted permanently.", HttpStatusCode.NoContent)
+        );
     }
+
 }

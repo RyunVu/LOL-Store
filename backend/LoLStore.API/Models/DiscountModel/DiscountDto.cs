@@ -1,3 +1,5 @@
+using LoLStore.Core.Constants;
+
 namespace LoLStore.API.Models.DiscountModel;
 
 public class DiscountDto
@@ -8,7 +10,7 @@ public class DiscountDto
     public decimal DiscountValue { get; set; }
     public bool IsPercentage { get; set; }
 
-    public int? MinimumOrderAmount { get; set; }
+    public decimal? MinimumOrderAmount { get; set; }
     public int? MaxUses { get; set; }
     public int TimesUsed { get; set; }
 
@@ -16,5 +18,6 @@ public class DiscountDto
     public DateTime EndDate { get; set; }
 
     public bool IsActive { get; set; }
+    public DiscountStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 }

@@ -23,7 +23,7 @@ public class CategoryMap : IEntityTypeConfiguration<Category>
 			.HasMaxLength(256)
 			.IsRequired();
 
-		builder.Property(c => c.ShowOnMenu)
+		builder.Property(c => c.IsActive)
 			.IsRequired()
 			.HasDefaultValue(false);
 

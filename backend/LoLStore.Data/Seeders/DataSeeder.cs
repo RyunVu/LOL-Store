@@ -1,5 +1,6 @@
 using LoLStore.Core.Entities;
 using LoLStore.Data.Contexts;
+using LoLStore.Data.Seeders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -45,6 +46,20 @@ public class DataSeeder : IDataSeeder
                     await _context.Categories.ToListAsync(),
                     await _context.Suppliers.ToListAsync());
             }
+
+            if (!await _context.Orders.AnyAsync())
+            {
+                var users = await _context.Users.ToListAsync();
+                var products = await _context.Products.ToListAsync();
+                var discounts = await _context.Discounts.ToListAsync();
+
+                var orders = OrderSeeder.Generate(users, products, discounts);
+
+                _context.Orders.AddRange(orders);
+                await _context.SaveChangesAsync();
+            }
+
+
         }
         catch (Exception ex)
         {
@@ -81,7 +96,7 @@ public class DataSeeder : IDataSeeder
 
         var adminUser = new User
         {
-            Id = Guid.NewGuid(),
+            
             Name = "Admin",
             Email = "admin@lolstore.local",
             Address = "N/A",
@@ -100,9 +115,9 @@ public class DataSeeder : IDataSeeder
     {
         var categories = new List<Category>()
         {
-            new() {Id = Guid.NewGuid(), Name = "Figurines", UrlSlug = "figures"},
-            new() {Id = Guid.NewGuid(), Name = "Statues", UrlSlug = "statues"},
-            new() {Id = Guid.NewGuid(), Name = "Acrylics", UrlSlug = "acrylics"},
+            new() { Name = "Figurines", UrlSlug = "figures"},
+            new() { Name = "Statues", UrlSlug = "statues"},
+            new() { Name = "Acrylics", UrlSlug = "acrylics"},
         };
 
         _context.Categories.AddRange(categories);        
@@ -117,7 +132,7 @@ public class DataSeeder : IDataSeeder
     {
         new()
         {
-            Id = Guid.NewGuid(),
+            
             Code = "WELCOME10",
             DiscountValue = 10, // 10% off
             IsPercentage = true,
@@ -131,7 +146,7 @@ public class DataSeeder : IDataSeeder
         },
         new()
         {
-            Id = Guid.NewGuid(),
+            
             Code = "SAVE50",
             DiscountValue = 50, // $50 off
             IsPercentage = false,
@@ -145,7 +160,7 @@ public class DataSeeder : IDataSeeder
         },
         new()
         {
-            Id = Guid.NewGuid(),
+            
             Code = "WEEKEND5",
             DiscountValue = 5, // 5% off
             IsPercentage = true,
@@ -171,7 +186,7 @@ public class DataSeeder : IDataSeeder
         {
             new()
             {
-                Id = Guid.NewGuid(),
+                
                 Name = "Riot Merch Store",
                 ContactEmail = "support@riotmerch.com",
                 Phone = "+1-800-RIOT-LOL",
@@ -183,7 +198,7 @@ public class DataSeeder : IDataSeeder
             },
             new()
             {
-                Id = Guid.NewGuid(),
+                
                 Name = "AnimeFigures Co.",
                 ContactEmail = "sales@animefigures.co.jp",
                 Phone = "+81-3-4567-8910",
@@ -195,7 +210,7 @@ public class DataSeeder : IDataSeeder
             },
             new()
             {
-                Id = Guid.NewGuid(),
+                
                 Name = "LoL Collectibles Ltd.",
                 ContactEmail = "info@lolcollectibles.com",
                 Phone = "+44-20-1234-5678",
@@ -220,7 +235,7 @@ public class DataSeeder : IDataSeeder
         {
             new()
             {
-                Id = Guid.NewGuid(),
+                
                 Sku = "LOL-FIG-001",
                 UrlSlug = "ahri-figurine",
                 Name = "Ahri The Nine-Tailed Fox Figurine",
@@ -238,7 +253,7 @@ public class DataSeeder : IDataSeeder
             },
             new()
             {
-                Id = Guid.NewGuid(),
+                
                 Sku = "LOL-STA-002",
                 UrlSlug = "yasuo-statue",
                 Name = "Yasuo The Unforgiven Statue",
@@ -256,7 +271,7 @@ public class DataSeeder : IDataSeeder
             },
             new()
             {
-                Id = Guid.NewGuid(),
+                
                 Sku = "LOL-ACR-003",
                 UrlSlug = "jinx-acrylic-stand",
                 Name = "Jinx Acrylic Stand",

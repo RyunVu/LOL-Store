@@ -1,28 +1,28 @@
+using LoLStore.Core.Constants;
 using LoLStore.Core.Contracts;
 
 
 namespace LoLStore.Core.Entities;
 
-public class Discount : IEntity
+public class Discount : BaseEntity
 {
-     public Guid Id { get; set; }
-    
-    // Required fields
+    // Core
     public string Code { get; set; } = string.Empty;
+    public DiscountStatus Status { get; set; }
     public decimal DiscountValue { get; set; }
     public bool IsPercentage { get; set; }
     
-    // Optional fields - nullable 
+    // Conditions
     public decimal? MinimunOrderAmount { get; set; }
     public int? MaxUses { get; set; }
-    
     public int TimesUsed { get; set; }
     
-    // Dates with defaults
+    // Validity
     public DateTime StartDate { get; set; } = DateTime.UtcNow;
     public DateTime EndDate { get; set; }
     
+    // State
     public bool IsActive { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public ICollection<Order>? Orders { get; set; }
 }

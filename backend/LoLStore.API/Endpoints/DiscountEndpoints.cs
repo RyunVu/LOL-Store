@@ -1,9 +1,11 @@
 using System.Net;
 using LoLStore.API.Models;
 using LoLStore.API.Models.DiscountModel;
+using LoLStore.Core.Contracts;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 using LoLStore.Services.Shop;
+using LoLStore.Services.Shop.Discounts;
 using LoLStore.WebAPI.Models.DiscountModel;
 using Mapster;
 using MapsterMapper;
@@ -141,7 +143,7 @@ public static class DiscountEndpoints
         var discount = await repository.GetDiscountByIdAsync(id);
         if (discount == null)
         {
-            return Results.Ok(ApiResponse.Fail(
+            return Results.NotFound(ApiResponse.Fail(
                 HttpStatusCode.NotFound,
                 "Discount not found."));
         }
@@ -156,20 +158,44 @@ public static class DiscountEndpoints
     }
 
     private static async Task<IResult> CheckValidDiscount(
-        DiscountOrdersModel model,
+        [FromBody] DiscountOrdersModel model,
+        [FromServices] IDiscountService discountService,
         [FromServices] IOrderRepository orderRepo,
         [FromServices] IMapper mapper)
     {
         var tempOrder = await orderRepo.GetProductOrderAsync(model.Detail);
 
-        var discount = await orderRepo.CheckValidDiscountAsync(
+        var (result, discount) = await discountService.ValidateAsync(
             model.DiscountCode,
             tempOrder.TotalAmount);
 
-        return discount == null
-            ? Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.NotAcceptable,
-                "The discount code is invalid or has expired."))
-            : Results.Ok(ApiResponse.Success(mapper.Map<DiscountDto>(discount)));
+        return result switch
+        {
+            DiscountApplyResult.Valid when discount is not null =>
+                Results.Ok(ApiResponse.Success(
+                    mapper.Map<DiscountDto>(discount))),
+
+            DiscountApplyResult.MinimumNotMet =>
+                Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.NotAcceptable,
+                    "Order total does not meet minimum requirement.")),
+
+            DiscountApplyResult.UsageExceeded =>
+                Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.NotAcceptable,
+                    "Discount usage limit exceeded.")),
+
+            DiscountApplyResult.Expired =>
+                Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.NotAcceptable,
+                    "Discount has expired or is inactive.")),
+
+            _ =>
+                Results.Ok(ApiResponse.Fail(
+                    HttpStatusCode.NotFound,
+                    "Discount code not found."))
+        };
+
     }
+
 }

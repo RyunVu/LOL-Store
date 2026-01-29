@@ -1,4 +1,5 @@
 using System.Linq.Dynamic.Core;
+using LoLStore.Core.Constants;
 using Microsoft.EntityFrameworkCore;
 
 namespace LoLStore.Services.Extensions;
@@ -14,10 +15,7 @@ public static class PagedListExtensions
             ? defaultColumn
             : pagingParams.SortColumn.Trim();
 
-        var order = string.Equals(
-            pagingParams.SortOrder,
-            "ASC",
-            StringComparison.OrdinalIgnoreCase)
+        var order = pagingParams.SortOrder == SortOrder.Asc
             ? "ASC"
             : "DESC";
 

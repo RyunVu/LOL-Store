@@ -3,13 +3,11 @@ using LoLStore.API.Mapsters;
 using LoLStore.API.Endpoints;
 using LoLStore.API.Validations;
 using LoLStore.API.Middlewares;
+using LoLStore.Data.Seeders;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (builder.Environment.IsDevelopment())
-{
-    DotNetEnv.Env.Load();
-}
 
 builder.Configuration.AddEnvironmentVariables();
 
@@ -22,14 +20,19 @@ builder
     .ConfigureMapster()
     .ConfigureFluentValidation(); 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
 
 var app = builder.Build();
 
 app.UseGlobalExceptionHandler();
 
 var shouldSeed =
-    builder.Environment.IsDevelopment() ||
     builder.Configuration.GetValue<bool>("SEED_DATABASE");
 
 if (shouldSeed)
@@ -48,6 +51,10 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "LoL Store API v1");
         c.RoutePrefix = string.Empty;
     });
+
+    using var scope = app.Services.CreateScope();
+    var devSeeder = scope.ServiceProvider.GetRequiredService<ExtraProduct>();
+    await devSeeder.SeedExtraProductsAsync();
 }
 
 app.UseCors("DevCors");

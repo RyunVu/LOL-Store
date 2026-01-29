@@ -8,13 +8,21 @@
       "applicationUrl": "http://localhost:5132",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
+
+        "SEED_DATABASE": "false",
+        "INITIAL_ADMIN_PASSWORD": "admin123",
+
         "Jwt__Key": "LoLStore_SUPER_SECURE_256_BIT_SECRET_KEY_2025",
         "Jwt__Issuer": "LoLStore",
         "Jwt__Audience": "LoLStore",
-        "ConnectionStrings__DefaultConnection": "Server=.\\SQLEXPRESS;Database=LoLStore;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True",
+
+        "ConnectionStrings__DefaultConnection":
+          "Server=.\\SQLEXPRESS;Database=LoLStore;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True",
+
         "AllowLocalHost": "http://localhost:5173"
       }
     },
+
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
@@ -22,10 +30,17 @@
       "applicationUrl": "https://localhost:7202;http://localhost:5132",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
+
+        "SEED_DATABASE": "false",
+        "INITIAL_ADMIN_PASSWORD": "admin123",
+
         "Jwt__Key": "LoLStore_SUPER_SECURE_256_BIT_SECRET_KEY_2025",
         "Jwt__Issuer": "LoLStore",
         "Jwt__Audience": "LoLStore",
-        "ConnectionStrings__DefaultConnection": "Server=.\\SQLEXPRESS;Database=LoLStore;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True",
+
+        "ConnectionStrings__DefaultConnection":
+          "Server=.\\SQLEXPRESS;Database=LoLStore;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True",
+
         "AllowLocalHost": "http://localhost:5173"
       }
     }

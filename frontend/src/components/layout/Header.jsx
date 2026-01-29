@@ -7,7 +7,7 @@ export default function Header() {
   const itemCount = useCartStore((state) => state.getItemCount())
 
   return (
-    <header className="bg-dark-900 text-white shadow-lg sticky top-0 z-50">
+    <header className="bg-white text-gray-900 dark:bg-dark-900 dark:text-white shadow-lg sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -17,10 +17,10 @@ export default function Header() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/" className="hover:text-gold-500 transition">
+            <Link to="/" className="text-gray-700 dark:text-white hover:text-gold-500 transition">
               Home
             </Link>
-            <Link to="/shop" className="hover:text-gold-500 transition">
+            <Link to="/shop" className="text-gray-700 dark:text-white hover:text-gold-500 transition">
               Shop
             </Link>
           </nav>
@@ -28,7 +28,7 @@ export default function Header() {
           {/* Right side */}
           <div className="flex items-center gap-4">
             {/* Cart */}
-            <button className="relative hover:text-gold-500 transition">
+            <button className="relative text-gray-700 dark:text-white hover:text-gold-500 transition">
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -52,10 +52,12 @@ export default function Header() {
             {/* Auth buttons */}
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <span className="text-sm">Hi, {user?.name || user?.email || 'User'}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">
+                  Hi, {user?.name || user?.email || 'User'}
+                </span>
                 <button
                   onClick={logout}
-                  className="text-sm hover:text-gold-500 transition"
+                  className="text-sm text-gray-700 dark:text-white hover:text-gold-500 transition"
                 >
                   Logout
                 </button>
@@ -64,7 +66,7 @@ export default function Header() {
               <div className="flex items-center gap-3">
                 <Link
                   to="/login"
-                  className="text-sm hover:text-gold-500 transition"
+                  className="text-sm text-gray-700 dark:text-white hover:text-gold-500 transition"
                 >
                   Login
                 </Link>

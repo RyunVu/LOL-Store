@@ -4,7 +4,7 @@ export default function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-dark-900 text-gray-400 border-t border-dark-700">
+    <footer className="bg-gray-100 text-gray-600 border-t border-gray-200 dark:bg-dark-900 dark:text-gray-400 dark:border-dark-700">
       <div className="container mx-auto px-4 py-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
@@ -20,22 +20,22 @@ export default function Footer() {
 
           {/* Navigation */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
               Navigation
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/" className="hover:text-gold-500 transition">
+                <Link to="/" className="text-gray-600 dark:text-gray-400 hover:text-gold-500 transition">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/shop" className="hover:text-gold-500 transition">
+                <Link to="/shop" className="text-gray-600 dark:text-gray-400 hover:text-gold-500 transition">
                   Shop
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="hover:text-gold-500 transition">
+                <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-gold-500 transition">
                   About
                 </Link>
               </li>
@@ -44,22 +44,22 @@ export default function Footer() {
 
           {/* Account */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
               Account
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/login" className="hover:text-gold-500 transition">
+                <Link to="/login" className="text-gray-600 dark:text-gray-400 hover:text-gold-500 transition">
                   Login
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="hover:text-gold-500 transition">
+                <Link to="/register" className="text-gray-600 dark:text-gray-400 hover:text-gold-500 transition">
                   Register
                 </Link>
               </li>
               <li>
-                <Link to="/orders" className="hover:text-gold-500 transition">
+                <Link to="/orders" className="text-gray-600 dark:text-gray-400 hover:text-gold-500 transition">
                   My Orders
                 </Link>
               </li>
@@ -68,7 +68,7 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
               Contact
             </h4>
             <ul className="space-y-2 text-sm">
@@ -79,16 +79,16 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 pt-6 border-t border-dark-700 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
+        <div className="mt-10 pt-6 border-t border-gray-200 dark:border-dark-700 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
           <span>
             © {year} LoL Store. All rights reserved.
           </span>
 
           <div className="flex gap-4">
-            <Link to="/privacy" className="hover:text-gold-500 transition">
+            <Link to="/privacy" className="text-gray-600 dark:text-gray-400 hover:text-gold-500 transition">
               Privacy
             </Link>
-            <Link to="/terms" className="hover:text-gold-500 transition">
+            <Link to="/terms" className="text-gray-600 dark:text-gray-400 hover:text-gold-500 transition">
               Terms
             </Link>
           </div>

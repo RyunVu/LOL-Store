@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import './AdminLayout.css'
+import ScrollToTop from '../components/common/ScrollToTop'
 
 export default function AdminLayout() {
   const location = useLocation()
@@ -52,6 +53,7 @@ export default function AdminLayout() {
     { path: '/admin/products', label: 'Products', icon: 'bxs-shopping-bag-alt' },
     { path: '/admin/categories', label: 'Categories', icon: 'bxs-category' },
     { path: '/admin/orders', label: 'Orders', icon: 'bxs-cart' },
+    { path: '/admin/discounts', label: 'Discounts', icon: 'bxs-offer' },
     { path: '/admin/users', label: 'Users', icon: 'bxs-group' },
   ]
 
@@ -221,6 +223,7 @@ export default function AdminLayout() {
 
         {/* MAIN */}
         <main>
+          <ScrollToTop />
           <Outlet />
         </main>
       </section>
