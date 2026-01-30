@@ -4,6 +4,9 @@ import { productsApi } from '@/api/products.api'
 import { categoriesApi } from '@/api/categories.api'
 import ProductSection from '@/components/products/ProductSection'
 import { useDebounce } from '@/hooks/useDebounce'
+import CustomSelect from '@/components/common/CustomSelect' // Import the custom select
+import Slider from 'rc-slider'
+import 'rc-slider/assets/index.css'
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -12,13 +15,17 @@ export default function ShopPage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [totalItems, setTotalItems] = useState(0)
+  const [priceDraft, setPriceDraft] = useState([0, 1000])
 
   const [filters, setFilters] = useState({
     keyword: searchParams.get('search') || '',
     categoryId: searchParams.get('category') || '',
-    minPrice: searchParams.get('minPrice') || '',
-    maxPrice: searchParams.get('maxPrice') || '',
-    sortBy: searchParams.get('sort') || '',
+    minPrice: Number(searchParams.get('minPrice')) || 0,
+    maxPrice: Number(searchParams.get('maxPrice')) || 1000,
+
+    sortColumn: searchParams.get('sortColumn') || '',
+    sortOrder: searchParams.get('sortOrder') || 'Desc',
+
     pageNumber: Number(searchParams.get('page')) || 1,
     pageSize: 20,
   })
@@ -29,10 +36,15 @@ export default function ShopPage() {
     categoryId,
     minPrice,
     maxPrice,
-    sortBy,
+    sortColumn,
+    sortOrder,
     pageNumber,
     pageSize,
   } = filters
+  
+  useEffect(() => {
+    setPriceDraft([filters.minPrice, filters.maxPrice])
+  }, [filters.minPrice, filters.maxPrice])
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -47,7 +59,6 @@ export default function ShopPage() {
         
         console.log(visibleCategories);
         
-
         setCategories(visibleCategories)
       } catch (error) {
         console.error('Failed to fetch categories:', error)
@@ -66,38 +77,10 @@ export default function ShopPage() {
         categoryId,
         minPrice,
         maxPrice,
-        sortBy,
+        sortColumn,
+        sortOrder,
         pageNumber,
         pageSize,
-      }
-      
-      if (sortBy) {
-        switch (sortBy) {
-          case 'price_asc':
-            params.sortColumn = 'finalPrice' 
-            params.sortOrder = 'asc'
-            break
-
-          case 'price_desc':
-            params.sortColumn = 'finalPrice'
-            params.sortOrder = 'desc'
-            break
-
-          case 'name_asc':
-            params.sortColumn = 'name'
-            params.sortOrder = 'asc'
-            break
-
-          case 'name_desc':
-            params.sortColumn = 'name'
-            params.sortOrder = 'desc'
-            break
-
-          case 'newest':
-            params.sortColumn = 'createDate'
-            params.sortOrder = 'desc'
-            break
-        }
       }
 
       Object.keys(params).forEach(
@@ -117,7 +100,8 @@ export default function ShopPage() {
     categoryId,
     minPrice,
     maxPrice,
-    sortBy,
+    sortColumn,
+    sortOrder,
     pageNumber,
     pageSize,
   ])
@@ -133,7 +117,8 @@ export default function ShopPage() {
     if (filters.categoryId) params.category = filters.categoryId
     if (filters.minPrice) params.minPrice = filters.minPrice
     if (filters.maxPrice) params.maxPrice = filters.maxPrice
-    if (filters.sortBy) params.sort = filters.sortBy
+    if (filters.sortColumn) params.sortColumn = filters.sortColumn
+    if (filters.sortOrder) params.sortOrder = filters.sortOrder
     if (filters.pageNumber > 1) params.page = filters.pageNumber
 
     setSearchParams(params)
@@ -163,23 +148,40 @@ export default function ShopPage() {
     setFilters({
       keyword: '',
       categoryId: '',
-      minPrice: '',
-      maxPrice: '',
-      sortBy: '',
+      minPrice: 0,
+      maxPrice: 1000,
+      sortColumn: '',
+      sortOrder: 'Desc',
       pageNumber: 1,
       pageSize: 20,
     })
   }
 
+  // Prepare category options for CustomSelect
+  const categoryOptions = [
+    { value: '', label: 'All Categories' },
+    ...categories.map(c => ({ value: c.id, label: c.name }))
+  ]
+
+  // Prepare sort options for CustomSelect
+  const sortOptions = [
+    { value: '', label: 'Default' },
+    { value: 'FinalPrice_Asc', label: 'Price: Low → High' },
+    { value: 'FinalPrice_Desc', label: 'Price: High → Low' },
+    { value: 'Name_Asc', label: 'Name: A → Z' },
+    { value: 'Name_Desc', label: 'Name: Z → A' },
+    { value: 'CreatedAt_Desc', label: 'Newest' },
+  ]
+
   const totalPages = Math.ceil(totalItems / pageSize)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark">
       {/* Hero */}
       <div className="bg-linear-to-r from-primary-900 to-dark-900 text-white py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl font-bold mb-4">Shop</h1>
-          <p className="text-gray-300">
+          <p className="text-text-secondary-dark">
             Discover official League of Legends merchandise
           </p>
         </div>
@@ -188,10 +190,11 @@ export default function ShopPage() {
       <div className="container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
         {/* Sidebar */}
         <aside className="lg:w-64 shrink-0" id="sidebar-anchor">
-          <div className="bg-white rounded-lg shadow-sm p-6 lg:sticky lg:top-20">
+          <div className="bg-surface-light dark:bg-surface-dark rounded-lg shadow-sm p-6 lg:sticky lg:top-20 border border-border-light dark:border-border-dark">
+            
             {/* Search */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-text-primary-light dark:text-text-primary-dark mb-2">
                 Search
               </label>
               <input
@@ -201,97 +204,121 @@ export default function ShopPage() {
                 onChange={(e) =>
                   handleFilterChange('keyword', e.target.value)
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2.5 border border-border-light dark:border-border-dark rounded-lg 
+                bg-white dark:bg-dark-800 
+                text-text-primary-light dark:text-text-primary-dark
+                placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark
+                focus:ring-2 focus:ring-primary-500 focus:border-primary-500 
+                hover:border-gray-400 dark:hover:border-gray-500
+                transition-all"
               />
             </div>
 
-            {/* Categories */}
+            {/* Categories - Using Custom Select */}
             <div className="mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-3">Categories</p>
-              <div className="space-y-2">
-                <label className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="radio"
-                    checked={categoryId === ''}
-                    onChange={() => handleFilterChange('categoryId', '')}
-                    className="mr-3 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700">All Categories</span>
-                </label>
-
-                {categories.map((c) => (
-                  <label
-                    key={c.id}
-                    className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded"
-                  >
-                    <input
-                      type="radio"
-                      checked={categoryId === c.id}
-                      onChange={() => handleFilterChange('categoryId', c.id)}
-                      className="mr-3 text-primary-600 focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-700">{c.name}</span>
-                  </label>
-                ))}
-              </div>
+              <label className="block text-sm font-semibold text-text-primary-light dark:text-text-primary-dark mb-2">
+                Category
+              </label>
+              <CustomSelect
+                value={categoryId}
+                onChange={(value) => handleFilterChange('categoryId', value)}
+                options={categoryOptions}
+                placeholder="All Categories"
+              />
             </div>
 
             {/* Price Range */}
             <div className="mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-3">Price Range</p>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Min Price</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    min="0"
-                    value={filters.minPrice}
-                    onChange={(e) =>
-                      handleFilterChange('minPrice', e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Max Price</label>
-                  <input
-                    type="number"
-                    placeholder="1000"
-                    min="0"
-                    value={filters.maxPrice}
-                    onChange={(e) =>
-                      handleFilterChange('maxPrice', e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
+              <p className="text-sm font-semibold text-text-primary-light dark:text-text-primary-dark mb-3">
+                Price Range
+              </p>
+
+              {/* Price labels */}
+              <div className="flex justify-between text-sm text-text-secondary-light dark:text-text-secondary-dark mb-2">
+                <span>${priceDraft[0]}</span>
+                <span>${priceDraft[1]}</span>
               </div>
+
+              {/* Slider */}
+              <Slider
+                range
+                min={0}
+                max={1000}
+                step={10}
+                value={priceDraft}
+                onChange={(value) => {
+                  setPriceDraft(value)
+                }}
+                onChangeComplete={([min, max]) => {
+                  setFilters((prev) => ({
+                    ...prev,
+                    minPrice: min,
+                    maxPrice: max,
+                    pageNumber: 1,
+                  }))
+                }}
+                styles={{
+                  track: {
+                    backgroundColor: '#6366F1',
+                    height: 6,
+                  },
+                  rail: {
+                    backgroundColor: '#E5E7EB',
+                    height: 6,
+                  },
+                  handle: {
+                    borderColor: '#EAB308',
+                    backgroundColor: '#020617',
+                    boxShadow: '0 0 0 4px rgba(99,102,241,0.25)',
+                  },
+                }}
+              />
             </div>
 
-            {/* Sort By */}
+            {/* Sort By - Using Custom Select */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-text-primary-light dark:text-text-primary-dark mb-2">
                 Sort By
               </label>
-              <select
-                value={filters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="">Default</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="name_asc">Name: A to Z</option>
-                <option value="name_desc">Name: Z to A</option>
-                <option value="newest">Newest First</option>
-              </select>
+              <CustomSelect
+                value={
+                  filters.sortColumn
+                    ? `${filters.sortColumn}_${filters.sortOrder}`
+                    : ''
+                }
+                onChange={(value) => {
+                  if (!value) {
+                    setFilters((prev) => ({
+                      ...prev,
+                      sortColumn: '',
+                      sortOrder: 'Desc',
+                      pageNumber: 1,
+                    }))
+                    return
+                  }
+
+                  const [column, order] = value.split('_')
+
+                  setFilters((prev) => ({
+                    ...prev,
+                    sortColumn: column,
+                    sortOrder: order,
+                    pageNumber: 1,
+                  }))
+                }}
+                options={sortOptions}
+                placeholder="Default"
+              />
             </div>
 
             {/* Clear Filters */}
             <button
               onClick={handleClearFilters}
-              className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="w-full px-4 py-2.5 text-sm font-medium 
+              text-text-primary-light dark:text-text-primary-dark
+              bg-gray-100 dark:bg-dark-700 
+              hover:bg-gray-200 dark:hover:bg-dark-800 
+              rounded-lg transition-colors border border-border-light dark:border-border-dark"
             >
               Clear All Filters
             </button>
