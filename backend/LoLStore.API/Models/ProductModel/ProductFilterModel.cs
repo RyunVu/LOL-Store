@@ -4,7 +4,7 @@ public class ProductFilterModel : PagingModel
 {
     public string? Keyword { get; set; }
     public Guid? CategoryId { get; set; }
-    public bool? Active { get; set; } = true;
+    public bool? IsActive { get; set; } = true;
     public bool? IsDeleted { get; set; } = false;
     public bool? IsPublished { get; set; } = true;
     public int? Year { get; set; }

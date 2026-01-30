@@ -49,7 +49,7 @@ public class OrderRepository : IOrderRepository
         var productIds = items.Select(i => i.Id).ToList();
 
         var products = await _context.Products
-            .Where(p => productIds.Contains(p.Id) && p.Active)
+            .Where(p => productIds.Contains(p.Id) && p.IsActive)
             .ToListAsync(ct);
 
         foreach (var item in items)
@@ -196,7 +196,7 @@ public class OrderRepository : IOrderRepository
         CancellationToken ct = default)
     {
         return await _context.Products
-            .AnyAsync(p => p.Id == productId && p.Active && p.Quantity >= quantity, ct);
+            .AnyAsync(p => p.Id == productId && p.IsActive && p.Quantity >= quantity, ct);
     }
 
     public async Task<Order> GetOrderByIdAsync(Guid id, CancellationToken ct = default)

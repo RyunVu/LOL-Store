@@ -245,7 +245,7 @@ public class DataSeeder : IDataSeeder
                 Quantity = 50,
                 Discount = 0,
                 Note = "Limited edition, highly detailed collectible.",
-                Active = true,
+                IsActive = true,
                 IsDeleted = false,
                 SupplierId = suppliers[0].Id, // Riot Merch Store
                 CountOrder = 0,
@@ -263,7 +263,7 @@ public class DataSeeder : IDataSeeder
                 Quantity = 30,
                 Discount = 10, // maybe 10% off
                 Note = "Includes certificate of authenticity.",
-                Active = true,
+                IsActive = true,
                 IsDeleted = false,
                 SupplierId = suppliers[1].Id, // AnimeFigures Co.
                 CountOrder = 0,
@@ -281,7 +281,7 @@ public class DataSeeder : IDataSeeder
                 Quantity = 200,
                 Discount = 0,
                 Note = "Perfect for your desk setup.",
-                Active = true,
+                IsActive = true,
                 IsDeleted = false,
                 SupplierId = suppliers[2].Id, // LoL Collectibles Ltd.
                 CountOrder = 0,

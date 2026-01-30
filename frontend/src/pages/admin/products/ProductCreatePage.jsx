@@ -71,7 +71,7 @@ export default function ProductCreatePage() {
           quantity: 0,
           discount: 0,
           supplierId: '',
-          active: true,
+          isActive: true,
           categoryIds: [],
         }}
         categories={categories}

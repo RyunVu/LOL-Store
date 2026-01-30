@@ -42,7 +42,7 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 			.HasDefaultValue(0);
 
 
-		builder.Property(p => p.Active)
+		builder.Property(p => p.IsActive)
 			.IsRequired()
 			.HasDefaultValue(false);
 

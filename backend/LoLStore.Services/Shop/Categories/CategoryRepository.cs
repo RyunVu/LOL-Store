@@ -81,7 +81,7 @@ public class CategoryRepository : ICategoryRepository
 
         var related = _context.Products
             .AsNoTracking()
-            .Where(p => !p.IsDeleted && p.Active)
+            .Where(p => !p.IsDeleted && p.IsActive)
             .Where(p => p.Categories.Any(c =>
                 c.UrlSlug == query.UrlSlug && !c.IsDeleted))
             .SelectMany(p => p.Categories)

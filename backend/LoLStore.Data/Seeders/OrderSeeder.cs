@@ -15,7 +15,7 @@ public static class OrderSeeder
         var orders = new List<Order>();
 
         var validProducts = products
-            .Where(p => p.Active && !p.IsDeleted)
+            .Where(p => p.IsActive && !p.IsDeleted)
             .ToList();
 
         foreach (var user in users)

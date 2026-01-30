@@ -34,7 +34,7 @@ public class ExtraProduct
                 Price = Random.Shared.Next(10, 300),
                 Quantity = Random.Shared.Next(1, 200),
                 Discount = Random.Shared.Next(0, 20),
-                Active = true,
+                IsActive = true,
                 IsDeleted = false,
                 CreateDate = DateTime.UtcNow,
                 SupplierId = suppliers[i % suppliers.Count].Id,

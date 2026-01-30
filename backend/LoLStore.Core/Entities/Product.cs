@@ -24,7 +24,7 @@ public class Product : IEntity
     // Optional note
     public string Note { get; set; } = string.Empty;
     
-    public bool Active { get; set; }
+    public bool IsActive { get; set; }
     public bool IsDeleted { get; set; }
     public Guid SupplierId { get; set; }
     public int CountOrder { get; set; }

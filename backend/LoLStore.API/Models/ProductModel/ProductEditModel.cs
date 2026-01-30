@@ -21,7 +21,7 @@ public class ProductEditModel
 
     public string? EditReason{ get; set; }
     
-    public bool Active { get; set; }
+    public bool IsActive { get; set; }
 
     public IList<Guid> CategoryIds { get; set; } = new List<Guid>();
 

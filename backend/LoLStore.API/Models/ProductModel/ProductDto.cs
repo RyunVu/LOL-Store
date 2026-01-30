@@ -26,7 +26,7 @@ public class ProductDto
 
 	public decimal? Discount { get; set; }
 
-	public bool Active { get; set; }
+	public bool IsActive { get; set; }
 
 	public bool IsDeleted { get; set; }
 

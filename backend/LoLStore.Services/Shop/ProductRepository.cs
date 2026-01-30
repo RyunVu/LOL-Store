@@ -20,7 +20,7 @@ public class ProductRepository : IProductRepository
     private static Expression<Func<Product, bool>> IsPublicVisible()
     {
         return p =>
-            p.Active &&
+            p.IsActive &&
             !p.IsDeleted &&
             p.Categories.Any(c =>
                 !c.IsDeleted &&
@@ -194,7 +194,7 @@ public class ProductRepository : IProductRepository
 
         products = products
             .WhereIf(query.Active.HasValue,
-                p => p.Active == query.Active!.Value)
+                p => p.IsActive == query.Active!.Value)
 
             .WhereIf(query.IsDeleted.HasValue,
                 p => p.IsDeleted == query.IsDeleted!.Value)
@@ -254,7 +254,7 @@ public class ProductRepository : IProductRepository
             .Include(p => p.Pictures)
             .Include(p => p.Categories)
             .Where(IsPublicVisible())
-            .Where(p => p.Quantity > 0 && p.Active)
+            .Where(p => p.Quantity > 0 && p.IsActive)
             .OrderByDescending(p => p.CountOrder)
             .Take(numberOfProducts)
             .ToListAsync(cancellationToken);
@@ -344,7 +344,7 @@ public class ProductRepository : IProductRepository
             .Where(IsPublicVisible())
             .Where(p =>
                 p.Id != product.Id &&
-                p.Active &&
+                p.IsActive &&
                 !p.IsDeleted &&
                 p.Categories.Any(c => categoryIds.Contains(c.Id)))
             .OrderByDescending(p => p.CountOrder)
@@ -363,7 +363,7 @@ public class ProductRepository : IProductRepository
         return await _context.Set<Product>()
             .Where(p => p.Id == productId)
             .ExecuteUpdateAsync(p =>
-                p.SetProperty(x => x.Active, x => !x.Active),
+                p.SetProperty(x => x.IsActive, x => !x.IsActive),
                 cancellationToken) > 0;
     }
 
