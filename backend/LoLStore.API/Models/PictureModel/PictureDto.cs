@@ -8,5 +8,5 @@ public class PictureDto
 
 	public string Path { get; set; } = string.Empty;
 
-	public bool Active { get; set; }
+	public bool IsActive { get; set; }
 }

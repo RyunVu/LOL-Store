@@ -16,7 +16,7 @@ export default function ProductCreatePage() {
       categoriesApi.getCategories(),
       suppliersApi.getSuppliers(),
     ]).then(([categoryRes, supplierRes]) => {
-      setCategories(categoryRes?.result?.items ?? [])
+      setCategories(categoryRes?.items ?? [])
       setSuppliers(supplierRes?.items ?? [])
     }).catch(err => {
       console.error('Failed to fetch data:', err)

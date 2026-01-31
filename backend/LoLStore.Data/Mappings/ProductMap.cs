@@ -66,11 +66,6 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 		builder.HasIndex(p => p.UrlSlug)
 			.IsUnique();
 
-		// Configure the timestamps
-		builder.Property(o => o.CreateDate)
-			.HasColumnType("datetime2")
-			.HasDefaultValueSql("SYSUTCDATETIME()");
-
 		builder.HasMany(p => p.Categories)
 			.WithMany(c => c.Products)
 			.UsingEntity<Dictionary<string, object>>(

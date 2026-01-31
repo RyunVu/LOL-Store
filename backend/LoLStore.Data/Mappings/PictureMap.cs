@@ -15,7 +15,7 @@ public class PictureMap : IEntityTypeConfiguration<Picture>
             .IsRequired()
             .HasMaxLength(512);
 
-        builder.Property(p => p.Active)
+        builder.Property(p => p.IsActive)
             .IsRequired()
             .HasDefaultValue(false);
     }

@@ -51,10 +51,10 @@ export default function PaginationBase({
 
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={i}>…</span>
+            <span key={`ellipsis-${i}`}>…</span>
           ) : (
             <button
-              key={p}
+              key={`page-${p}-${i}`}
               onClick={() => onPageChange(p)}
               className={p === page ? 'font-bold underline' : ''}
             >

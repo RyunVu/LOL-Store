@@ -240,7 +240,6 @@ public class DataSeeder : IDataSeeder
                 UrlSlug = "ahri-figurine",
                 Name = "Ahri The Nine-Tailed Fox Figurine",
                 Description = "A detailed 1/7 scale Ahri figurine with magic orb accessory.",
-                CreateDate = DateTime.UtcNow,
                 Price = 89.99m,
                 Quantity = 50,
                 Discount = 0,
@@ -258,7 +257,6 @@ public class DataSeeder : IDataSeeder
                 UrlSlug = "yasuo-statue",
                 Name = "Yasuo The Unforgiven Statue",
                 Description = "Premium resin statue of Yasuo in Wind Slash pose.",
-                CreateDate = DateTime.UtcNow,
                 Price = 159.99m,
                 Quantity = 30,
                 Discount = 10, // maybe 10% off
@@ -276,7 +274,6 @@ public class DataSeeder : IDataSeeder
                 UrlSlug = "jinx-acrylic-stand",
                 Name = "Jinx Acrylic Stand",
                 Description = "Colorful acrylic display stand featuring Jinx and Pow-Pow.",
-                CreateDate = DateTime.UtcNow,
                 Price = 19.99m,
                 Quantity = 200,
                 Discount = 0,

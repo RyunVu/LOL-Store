@@ -24,13 +24,12 @@ export default function ProductEditPage() {
       suppliersApi.getSuppliers(),
     ]).then(([p, categoryRes, supplierRes]) => {
       
-      console.log('PRODUCT DETAIL RESPONSE:', p)
       setProduct({
         ...p,
         categoryIds: p.categories?.map((x) => x.id) || [],
         editReason: '',
       })
-      setCategories(categoryRes?.result?.items ?? [])
+      setCategories(categoryRes?.items ?? [])
       setSuppliers(supplierRes?.items ?? [])
     }).catch(err => {
       console.error('Failed to fetch data:', err)

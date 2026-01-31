@@ -1,8 +1,15 @@
 import apiClient from './client'
 
 export const productsApi = {
+  // Public endpoint - forces IsActive=true, IsDeleted=false
   getProducts: async (params = {}) => {
     const { data } = await apiClient.get('/products', { params })
+    return data.result
+  },
+
+  // Admin endpoint - can see deleted products
+  getProductsByManager: async (params = {}) => {
+    const { data } = await apiClient.get('/products/byManager', { params })
     return data.result
   },
 
@@ -25,9 +32,7 @@ export const productsApi = {
 
   getRelatedProducts: async (slug, count = 4) => {
     if (!slug) throw new Error('Product slug is required')
-    const { data } = await apiClient.get(
-      `/products/Related/${slug}/${count}`
-    )
+    const { data } = await apiClient.get(`/products/Related/${slug}/${count}`)
     return data.result
   },
 
@@ -44,25 +49,19 @@ export const productsApi = {
 
   toggleActive: async (id) => {
     if (!id) throw new Error('Product id is required')
-    const { data } = await apiClient.get(`/products/toggle-active/${id}`)
-    return data.result
+    await apiClient.put(`/products/toggle-active/${id}`)
   },
 
-  toggleDelete: async (id, editReason) => {
+  toggleSoftDelete: async (id, editReason) => {
     if (!id) throw new Error('Product id is required')
-    const { data } = await apiClient.delete(
-      `/products/toggleDelete/${id}`,
-      {
-        data: { editReason },
-      }
-    )
-    return data.result
+    await apiClient.delete(`/products/toggleDelete/${id}`, {
+      data: { editReason },
+    })
   },
 
-  deleteProduct: async (id) => {
+  deleteProductPermanently: async (id) => {
     if (!id) throw new Error('Product id is required')
-    const { data } = await apiClient.delete(`/products/${id}`)
-    return data.result
+    await apiClient.delete(`/products/${id}`)
   },
 
   uploadProductImages: async (productId, files = []) => {
@@ -70,7 +69,7 @@ export const productsApi = {
     if (!files.length) return []
 
     const formData = new FormData()
-    files.forEach(file => formData.append('files', file))
+    files.forEach((file) => formData.append('files', file))
 
     const { data } = await apiClient.post(
       `/products/${productId}/pictures`,

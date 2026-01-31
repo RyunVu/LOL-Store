@@ -1,12 +1,15 @@
 using LoLStore.API.Models.CategoryModel;
 using LoLStore.API.Models.DiscountModel;
 using LoLStore.API.Models.OrderModel;
+using LoLStore.API.Models.PictureModel;
 using LoLStore.API.Models.ProductHistoryModel;
 using LoLStore.API.Models.ProductModel;
 using LoLStore.API.Models.SupplierModel;
 using LoLStore.API.Models.UserModel;
 using LoLStore.Core.Constants;
+using LoLStore.Core.DTO;
 using LoLStore.Core.DTO.Categories;
+using LoLStore.Core.DTO.Products;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 using LoLStore.WebAPI.Models.DiscountModel;
@@ -72,21 +75,41 @@ public class MapsterConfiguration : IRegister
         config.NewConfig<Supplier, SupplierDto>()
 			.Map(dest => dest.ProductCount,
 				src => src.Products == null ? 0 : src.Products.Count);
+        
+        config.NewConfig<PictureInputModel, PictureInputDto>();
 
-        config.NewConfig<Product, ProductDto>()
-            .Map(dest => dest.Discount, src => src.Discount)
-            .Map(dest => dest.FinalPrice,
-                src => src.Discount > 0
-                    ? src.Price - (src.Price * src.Discount / 100m)
-                    : src.Price);
-		config.NewConfig<ProductEditModel, Product>()
-			.Ignore(s => s.Categories);
+        // Product -> ProductDto
+            TypeAdapterConfig<Product, ProductDto>
+                .NewConfig()
+                .Map(dest => dest.FinalPrice,
+                    src => src.Price - (src.Price * src.Discount / 100));
 
-        config.NewConfig<ProductHistory, ProductHistoryDto>()
-			.Map(dest => dest.ProductName,
-				src => src.Product.Name ?? "")
-			.Map(dest => dest.UserName,
-				src => src.User.Name);
+            // Product -> ProductAdminDto
+            TypeAdapterConfig<Product, ProductAdminDto>
+                .NewConfig()
+                .Inherits<Product, ProductDto>();
+
+            // ProductEditModel -> CreateProductDto
+            TypeAdapterConfig<ProductEditModel, CreateProductDto>
+                .NewConfig();
+
+            // (Guid, ProductEditModel) -> UpdateProductDto
+            TypeAdapterConfig<(Guid Id, ProductEditModel Model), UpdateProductDto>
+                .NewConfig()
+                .Map(dest => dest.Id, src => src.Id)
+                .Map(dest => dest, src => src.Model);
+
+            // ProductFilterModel -> ProductQuery
+            TypeAdapterConfig<ProductFilterModel, ProductQuery>
+                .NewConfig();
+
+            // ProductManagerFilterModel -> ProductQuery
+            TypeAdapterConfig<ProductManagerFilterModel, ProductQuery>
+                .NewConfig();
+
+        config.NewConfig<ProductEditModel, Product>()
+            .Ignore(dest => dest.Categories)
+            .Ignore(dest => dest.Pictures);
 
         config.NewConfig<OrderDetail, OrderDetailDto>()
             .Map(dest => dest.Name,

@@ -99,6 +99,11 @@ public static class CategoryEndpoints
         model.SortColumn =
             SortColumnResolver.Resolve<Category>(model.DateFilter, nameof(Category.Name));
 
+        if (query.DateFilter == DateFilterType.Deleted)
+        {
+            query.IsDeleted = true;
+        }
+        
         var categories =
             await repository.GetPagedCategoriesAsync(
                 query: query,

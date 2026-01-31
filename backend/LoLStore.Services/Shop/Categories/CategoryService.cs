@@ -1,4 +1,3 @@
-using LoLStore.Core.Constants;
 using LoLStore.Core.DTO.Categories;
 using LoLStore.Core.Entities;
 using LoLStore.Services.Extensions;

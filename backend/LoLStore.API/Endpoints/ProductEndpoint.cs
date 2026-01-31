@@ -5,9 +5,13 @@ using LoLStore.API.Media;
 using LoLStore.API.Models;
 using LoLStore.API.Models.ProductHistoryModel;
 using LoLStore.API.Models.ProductModel;
+using LoLStore.Core.Constants;
+using LoLStore.Core.DTO.Products;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
+using LoLStore.Services.Helpers;
 using LoLStore.Services.Shop;
+using LoLStore.Services.Shop.Products;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
@@ -26,42 +30,59 @@ public static class ProductEndpoint
         var builder = app.MapGroup("/api/products");
 
         #region GET
+
         builder.MapGet("/", GetProducts)
             .Produces<ApiResponse<IPagedList<ProductDto>>>();
+
+        builder.MapGet("/byManager", GetProductsByManager)
+            .RequireAuthorization("RequireManagerRole")
+            .Produces<ApiResponse<IPagedList<ProductAdminDto>>>();
+
         builder.MapGet("/{id:guid}", GetProductById)
-			.Produces<ApiResponse<ProductDto>>();
-        builder.MapGet("/bySlug/{slug:regex(^[a-z0-9_-]+$)}", GetProductBySlug)			
             .Produces<ApiResponse<ProductDto>>();
+
+        builder.MapGet("/bySlug/{slug:regex(^[a-z0-9_-]+$)}", GetProductBySlug)
+            .Produces<ApiResponse<ProductDto>>();
+
         builder.MapGet("/histories", GetProductHistories)
             .RequireAuthorization("RequireAdminRole")
-			.Produces<ApiResponse<IPagedList<ProductHistoryDto>>>();
+            .Produces<ApiResponse<IPagedList<ProductHistoryDto>>>();
+
         builder.MapGet("/TopSales/{num:int}", GetProductsTopSale)
-			.Produces<ApiResponse<IList<ProductDto>>>();
+            .Produces<ApiResponse<IList<ProductDto>>>();
+
         builder.MapGet("/Related/{slug:regex(^[a-z0-9_-]+$)}/{num:int}", GetRelatedProducts)
-			.Produces<ApiResponse<IList<ProductDto>>>();
+            .Produces<ApiResponse<IList<ProductDto>>>();
+
         #endregion
 
         #region POST
+
         builder.MapPost("/", AddProduct)
             .AddEndpointFilter<ValidatorFilter<ProductEditModel>>()
             .RequireAuthorization("RequireManagerRole")
-			.Produces<ApiResponse<ProductDto>>();
+            .Produces<ApiResponse<ProductDto>>();
 
         builder.MapPost("/{id:guid}/pictures", SetProductPicture)
             .RequireAuthorization("RequireManagerRole")
             .Accepts<IList<IFormFile>>("multipart/form-data");
+
         #endregion
 
         #region PUT
+
         builder.MapPut("/{id:guid}", UpdateProduct)
             .AddEndpointFilter<ValidatorFilter<ProductEditModel>>()
             .RequireAuthorization("RequireManagerRole")
-			.Produces<ApiResponse<ProductDto>>();
+            .Produces<ApiResponse<ProductDto>>();
+
         builder.MapPut("/toggle-active/{id:guid}", ToggleActiveProduct)
             .RequireAuthorization("RequireManagerRole");
+
         #endregion
 
         #region DELETE
+
         builder.MapDelete("/toggleDelete/{id:guid}", ToggleDeleteProduct)
             .RequireAuthorization("RequireManagerRole");
 
@@ -70,6 +91,7 @@ public static class ProductEndpoint
 
         builder.MapDelete("/histories", DeleteHistory)
             .RequireAuthorization("RequireAdminRole");
+
         #endregion
 
         return app;
@@ -86,13 +108,38 @@ public static class ProductEndpoint
         var query = mapper.Map<ProductQuery>(model);
         model.PageSize ??= 20;
 
-        var products = await repository.GetPagedProductsAsync(
+        // Use the new public-facing method
+        var products = await repository.GetPagedProductsForUserAsync(
             query,
             model,
             p => p.ProjectToType<ProductDto>(),
             ct);
 
         return Results.Ok(ApiResponse.Success(new PaginationResult<ProductDto>(products)));
+    }
+
+    private static async Task<IResult> GetProductsByManager(
+        [AsParameters] ProductManagerFilterModel model,
+        [FromServices] IProductRepository repository,
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
+    {
+        var query = mapper.Map<ProductQuery>(model);
+
+        model.SortColumn =
+            SortColumnResolver.Resolve<Product>(model.DateFilter, nameof(Product.Name));
+        model.PageSize ??= 20;
+        if (query.DateFilter == DateFilterType.Deleted)
+        {
+            query.IsDeleted = true;
+        }
+        var products = await repository.GetPagedProductsAsync(
+            query,
+            model,
+            p => p.ProjectToType<ProductAdminDto>(),
+            ct);
+
+        return Results.Ok(ApiResponse.Success(new PaginationResult<ProductAdminDto>(products)));
     }
 
     private static async Task<IResult> GetProductById(
@@ -121,10 +168,10 @@ public static class ProductEndpoint
 
     private static async Task<IResult> ToggleActiveProduct(
         [FromRoute] Guid id,
-        [FromServices] IProductRepository repository,
+        [FromServices] IProductService service,
         CancellationToken ct)
     {
-        return await repository.ToggleActiveProductAsync(id, ct)
+        return await service.ToggleActiveAsync(id, ct)
             ? Results.NoContent()
             : Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "Product not found"));
     }
@@ -174,74 +221,72 @@ public static class ProductEndpoint
     private static async Task<IResult> AddProduct(
         HttpContext context,
         ProductEditModel model,
+        [FromServices] IProductService productService,
         [FromServices] IProductRepository productRepo,
-        [FromServices] ISupplierRepository supplierRepo,
         [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var user = context.GetCurrentUser();
         if (user == null) return Results.Unauthorized();
 
-        if (await productRepo.IsProductNameExistedAsync(model.Name, null, ct))
-            return Results.Conflict(ApiResponse.Fail(
-                HttpStatusCode.Conflict,
-                "Product name already exists"));
+        try
+        {
+            var createDto = mapper.Map<CreateProductDto>(model);
+            var productId = await productService.CreateAsync(createDto, user.Id, ct);
 
-        if (await supplierRepo.GetSupplierByIdAsync(model.SupplierId, ct) == null)
-            return Results.BadRequest(ApiResponse.Fail(
-                HttpStatusCode.BadRequest, "Supplier not found"));
+            var product = await productRepo.GetProductByIdAsync(productId, true, ct);
 
-        var product = mapper.Map<Product>(model);
+            if (product == null)
+            {
+                return Results.NotFound(
+                    ApiResponse.Fail(HttpStatusCode.NotFound, "Product not found after creation"));
+            }
 
-        await productRepo.AddOrUpdateProductAsync(
-            product, user.Id, "Add new product", ct);
-
-        await productRepo.SetProductCategoriesAsync(
-            product, model.CategoryIds, ct);
-
-        return Results.Created(
-            $"/api/products/{product.Id}",
-            ApiResponse.Success(mapper.Map<ProductDto>(product), HttpStatusCode.Created));
+            return Results.Created(
+                $"/api/products/{productId}",
+                ApiResponse.Success(mapper.Map<ProductDto>(product), HttpStatusCode.Created));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
+        }
     }
 
     private static async Task<IResult> UpdateProduct(
         [FromRoute] Guid id,
         HttpContext context,
         [FromBody] ProductEditModel model,
-        [FromServices] IProductRepository repo,
-        [FromServices] ISupplierRepository supplierRepo,
+        [FromServices] IProductService productService,
+        [FromServices] IProductRepository productRepo,
         [FromServices] IMapper mapper,
         CancellationToken ct)
     {
         var user = context.GetCurrentUser();
         if (user == null) return Results.Unauthorized();
 
-        if (string.IsNullOrWhiteSpace(model.EditReason))
-            return Results.BadRequest(ApiResponse.Fail(
-                HttpStatusCode.BadRequest, "Edit reason is required"));
+        try
+        {
+            var updateDto = mapper.Map<UpdateProductDto>((id, model));
+            var success = await productService.UpdateAsync(updateDto, user.Id, ct);
 
-        if (await repo.IsProductNameExistedAsync(model.Name, id, ct))
-            return Results.Conflict(ApiResponse.Fail(
-                HttpStatusCode.Conflict, "Product name already exists"));
+            if (!success)
+                return Results.NotFound(ApiResponse.Fail(
+                    HttpStatusCode.NotFound, "Product not found"));
 
-        if (await supplierRepo.GetSupplierByIdAsync(model.SupplierId, ct) == null)
-            return Results.NotFound(ApiResponse.Fail(
-                HttpStatusCode.NotFound, "Supplier not found"));
+            var product = await productRepo.GetProductByIdAsync(id, true, ct);
+            
+            if (product == null)
+            {
+                return Results.NotFound(
+                    ApiResponse.Fail(HttpStatusCode.NotFound, "Product not found after creation"));
+            }
 
-        var product = await repo.GetProductByIdAsync(id, false, ct);
-        if (product == null)
-            return Results.NotFound(ApiResponse.Fail(
-                HttpStatusCode.NotFound, "Product not found"));
-
-        mapper.Map(model, product);
-
-        await repo.AddOrUpdateProductAsync(
-            product, user.Id, model.EditReason, ct);
-
-        await repo.SetProductCategoriesAsync(
-            product, model.CategoryIds, ct);
-
-        return Results.Ok(ApiResponse.Success(mapper.Map<ProductDto>(product)));
+            return Results.Ok(ApiResponse.Success(mapper.Map<ProductDto>(product)));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
+        }
     }
 
     private static async Task<IResult> SetProductPicture(
@@ -265,7 +310,6 @@ public static class ProductEndpoint
             return Results.NotFound(ApiResponse.Fail(
                 HttpStatusCode.NotFound, "Product not found"));
 
-        var oldImages = await repo.GetImageUrlsAsync(id, ct);
         var newUrls = new List<string>();
 
         try
@@ -277,12 +321,8 @@ public static class ProductEndpoint
                 newUrls.Add(url);
             }
 
-            await repo.DeleteImageUrlsAsync(id, ct);
             foreach (var url in newUrls)
                 await repo.SetImageUrlAsync(id, url, ct);
-
-            foreach (var img in oldImages)
-                await media.DeleteFileAsync(img.Path);
 
             return Results.Ok(ApiResponse.Success("Pictures updated"));
         }
@@ -302,42 +342,54 @@ public static class ProductEndpoint
         [FromRoute] Guid id,
         HttpContext context,
         [FromBody] ProductEditModel model,
-        [FromServices] IProductRepository repo,
+        [FromServices] IProductService productService,
         CancellationToken ct)
     {
         var user = context.GetCurrentUser();
         if (user == null) return Results.Unauthorized();
 
-        if (string.IsNullOrWhiteSpace(model.EditReason))
-            return Results.BadRequest(ApiResponse.Fail(
-                HttpStatusCode.BadRequest, "Delete reason is required"));
+        try
+        {
+            var reason = model.EditReason ?? string.Empty;
+            var success = await productService.ToggleSoftDeleteAsync(id, user.Id, reason, ct);
 
-        return await repo.ToggleDeleteProductAsync(id, user.Id, model.EditReason, ct)
-            ? Results.NoContent()
-            : Results.NotFound(ApiResponse.Fail(
-                HttpStatusCode.NotFound, "Product not found"));
+            return success
+                ? Results.NoContent()
+                : Results.NotFound(ApiResponse.Fail(
+                    HttpStatusCode.NotFound, "Product not found"));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
+        }
     }
 
     private static async Task<IResult> DeleteProduct(
         [FromRoute] Guid id,
+        [FromServices] IProductService productService,
         [FromServices] IProductRepository repo,
-        [FromServices] IMediaManager media)
+        [FromServices] IMediaManager media,
+        CancellationToken ct)
     {
-        var product = await repo.GetProductByIdAsync(id);
-        if (product == null)
-            return Results.NotFound(ApiResponse.Fail(
-                HttpStatusCode.NotFound, "Product not found"));
+        try
+        {
+            // Delete images first
+            var images = await repo.GetImageUrlsAsync(id, ct);
+            foreach (var img in images)
+                await media.DeleteFileAsync(img.Path);
 
-        if (!product.IsDeleted)
-            return Results.Conflict(ApiResponse.Fail(
-                HttpStatusCode.Conflict, "Product must be soft-deleted first"));
+            // Delete product
+            var success = await productService.DeletePermanentlyAsync(id, ct);
 
-        var images = await repo.GetImageUrlsAsync(id);
-        foreach (var img in images)
-            await media.DeleteFileAsync(img.Path);
-
-        await repo.DeleteProductAsync(id);
-        return Results.NoContent();
+            return success
+                ? Results.NoContent()
+                : Results.NotFound(ApiResponse.Fail(
+                    HttpStatusCode.NotFound, "Product not found"));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ApiResponse.Fail(HttpStatusCode.Conflict, ex.Message));
+        }
     }
 
     private static async Task<IResult> DeleteHistory(
