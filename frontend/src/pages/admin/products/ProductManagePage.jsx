@@ -10,6 +10,9 @@ export default function ProductsManagePage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
+  //  Selection state
+  const [selectedProducts, setSelectedProducts] = useState([])
+
   const [deleteModal, setDeleteModal] = useState({
     show: false,
     product: null,
@@ -75,10 +78,11 @@ export default function ProductsManagePage() {
       })
 
       const res = await productsApi.getProductsByManager(params)
-      console.log(res);
-      
+
       setProducts(res?.items ?? [])
       setTotalItems(res?.metadata.totalItemCount ?? 0)
+      // Clear selections when products change
+      setSelectedProducts([])
     } catch (error) {
       console.error('Failed to fetch products:', error)
       setProducts([])
@@ -91,43 +95,169 @@ export default function ProductsManagePage() {
     fetchProducts()
   }, [fetchProducts])
 
-  // Delete product
-  const handleDelete = async () => {
-    if (!deleteModal.product) return
-
-    try {
-      if (deleteModal.isPermanent) {
-        // Permanent delete
-        await productsApi.deleteProductPermanently(deleteModal.product.id)
-      } else {
-        // Soft delete
-        await productsApi.toggleSoftDelete(
-          deleteModal.product.id,
-          'Deleted from admin panel'
-        )
-      }
-      setDeleteModal({ show: false, product: null, isPermanent: false })
-      fetchProducts()
-    } catch (error) {
-      console.error('Delete failed:', error)
-      alert('Failed to delete product')
+  //  Selection handlers
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedProducts(products.map((p) => p.id))
+    } else {
+      setSelectedProducts([])
     }
   }
 
-  // Restore product
-  const handleRestore = async () => {
-    if (!restoreModal.product) return
+  const handleSelectProduct = (productId) => {
+    setSelectedProducts((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    )
+  }
+
+  //  Check if all selected products are deleted
+  const allSelectedAreDeleted = () => {
+    if (selectedProducts.length === 0) return false
+    return selectedProducts.every((id) => {
+      const product = products.find((p) => p.id === id)
+      return product?.isDeleted
+    })
+  }
+
+  //  Check if any selected products are not deleted
+  const anySelectedNotDeleted = () => {
+    return selectedProducts.some((id) => {
+      const product = products.find((p) => p.id === id)
+      return !product?.isDeleted
+    })
+  }
+
+  //  Bulk delete handler
+  const handleBulkDelete = () => {
+    const isPermanent = allSelectedAreDeleted()
+    setDeleteModal({
+      show: true,
+      product: null,
+      isPermanent,
+      isMultiple: true,
+    })
+  }
+
+  //  Bulk restore handler
+  const handleBulkRestore = () => {
+    setRestoreModal({
+      show: true,
+      product: null,
+      isMultiple: true,
+    })
+  }
+
+  //  Check if all selected are active
+  const allSelectedAreActive = () => {
+    if (selectedProducts.length === 0) return false
+    return selectedProducts.every((id) => {
+      const product = products.find((p) => p.id === id)
+      return product?.isActive
+    })
+  }
+
+  //  Check if all selected are inactive
+  const allSelectedAreInactive = () => {
+    if (selectedProducts.length === 0) return false
+    return selectedProducts.every((id) => {
+      const product = products.find((p) => p.id === id)
+      return !product?.isActive
+    })
+  }
+
+  //  Bulk toggle active status
+  const handleBulkToggleActive = async (setActive) => {
+    try {
+      // Only toggle products that need to change
+      const productsToToggle = selectedProducts.filter((productId) => {
+        const product = products.find((p) => p.id === productId)
+        return product?.isActive !== setActive
+      })
+
+      if (productsToToggle.length === 0) {
+        alert('All selected products are already in the desired state')
+        return
+      }
+
+      const togglePromises = productsToToggle.map((productId) => {
+        return productsApi.toggleActive(productId, setActive)
+      })
+      await Promise.all(togglePromises)
+      setSelectedProducts([])
+      fetchProducts()
+    } catch (error) {
+      console.error('Toggle active failed:', error)
+      alert('Failed to update product status')
+    }
+  }
+
+  // Delete product (single or multiple)
+  const handleDelete = async () => {
+    if (!deleteModal.product && !deleteModal.isMultiple) return
 
     try {
-      await productsApi.toggleSoftDelete(
-        restoreModal.product.id,
-        'Restored from admin panel'
-      )
-      setRestoreModal({ show: false, product: null })
+      if (deleteModal.isMultiple) {
+        // Bulk delete
+        const deletePromises = selectedProducts.map((productId) => {
+          if (deleteModal.isPermanent) {
+            return productsApi.deleteProductPermanently(productId)
+          } else {
+            return productsApi.toggleSoftDelete(
+              productId,
+              'Deleted from admin panel'
+            )
+          }
+        })
+        await Promise.all(deletePromises)
+        setSelectedProducts([])
+      } else {
+        // Single delete
+        if (deleteModal.isPermanent) {
+          await productsApi.deleteProductPermanently(deleteModal.product.id)
+        } else {
+          await productsApi.toggleSoftDelete(
+            deleteModal.product.id,
+            'Deleted from admin panel'
+          )
+        }
+      }
+      setDeleteModal({ show: false, product: null, isPermanent: false, isMultiple: false })
+      fetchProducts()
+    } catch (error) {
+      console.error('Delete failed:', error)
+      alert('Failed to delete product(s)')
+    }
+  }
+
+  // Restore product (single or multiple)
+  const handleRestore = async () => {
+    if (!restoreModal.product && !restoreModal.isMultiple) return
+
+    try {
+      if (restoreModal.isMultiple) {
+        // Bulk restore
+        const restorePromises = selectedProducts.map((productId) => {
+          return productsApi.toggleSoftDelete(
+            productId,
+            'Restored from admin panel'
+          )
+        })
+        await Promise.all(restorePromises)
+        setSelectedProducts([])
+      } else {
+        // Single restore
+        await productsApi.toggleSoftDelete(
+          restoreModal.product.id,
+          'Restored from admin panel'
+        )
+      }
+      setRestoreModal({ show: false, product: null, isMultiple: false })
       fetchProducts()
     } catch (error) {
       console.error('Restore failed:', error)
-      alert('Failed to restore product')
+      alert('Failed to restore product(s)')
     }
   }
 
@@ -160,7 +290,84 @@ export default function ProductsManagePage() {
       {/* Filters */}
       <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 mb-6 shadow-lg">
         <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold text-white">Product List</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Product List</h2>
+
+            {/* Bulk Action Buttons */}
+            {selectedProducts.length > 0 && (
+              <div className="flex items-center gap-3 bg-gray-900 px-4 py-2 rounded-lg border border-gray-600">
+                <span className="text-sm text-blue-400 font-medium">
+                  {selectedProducts.length} selected
+                </span>
+
+                <div className="h-4 w-px bg-gray-600"></div>
+
+                {/* Active/Inactive Toggle Buttons */}
+                {!allSelectedAreDeleted() && (
+                  <>
+                    {!allSelectedAreActive() && (
+                      <button
+                        onClick={() => handleBulkToggleActive(true)}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        Set Active
+                      </button>
+                    )}
+
+                    {!allSelectedAreInactive() && (
+                      <button
+                        onClick={() => handleBulkToggleActive(false)}
+                        className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        Set Inactive
+                      </button>
+                    )}
+
+                    <div className="h-4 w-px bg-gray-600"></div>
+                  </>
+                )}
+
+                {/* Show Restore if all selected are soft-deleted */}
+                {allSelectedAreDeleted() && (
+                  <button
+                    onClick={handleBulkRestore}
+                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Restore
+                  </button>
+                )}
+
+                {/* Show Delete if any selected are NOT deleted */}
+                {anySelectedNotDeleted() && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
+
+                {/* Show Delete Forever if all selected are soft-deleted */}
+                {allSelectedAreDeleted() && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-sm font-semibold rounded-lg transition-colors"
+                  >
+                    Delete Forever
+                  </button>
+                )}
+
+                <div className="h-4 w-px bg-gray-600"></div>
+
+                <button
+                  onClick={() => setSelectedProducts([])}
+                  className="text-gray-400 hover:text-white text-sm transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
@@ -309,6 +516,18 @@ export default function ProductsManagePage() {
               <table className="w-full border-collapse">
                 <thead className="bg-gray-900">
                   <tr>
+                    {/*  Checkbox Column */}
+                    <th className="px-6 py-4 whitespace-nowrap text-left">
+                      <input
+                        type="checkbox"
+                        checked={
+                          products.length > 0 &&
+                          selectedProducts.length === products.length
+                        }
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-6 py-4 whitespace-nowrap text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                       No
                     </th>
@@ -344,7 +563,22 @@ export default function ProductsManagePage() {
 
                 <tbody className="divide-y divide-gray-700">
                   {products.map((product, i) => (
-                    <tr key={product.id} className="hover:bg-gray-700/40 transition-colors">
+                    <tr
+                      key={product.id}
+                      className={`hover:bg-gray-700/40 transition-colors ${
+                        selectedProducts.includes(product.id) ? 'bg-gray-700/20' : ''
+                      }`}
+                    >
+                      {/*  Checkbox */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(product.id)}
+                          onChange={() => handleSelectProduct(product.id)}
+                          className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                        />
+                      </td>
+
                       {/* Row Number */}
                       <td className="px-6 py-4 whitespace-nowrap text-gray-300 text-sm">
                         {(filters.pageNumber - 1) * filters.pageSize + i + 1}
@@ -489,8 +723,8 @@ export default function ProductsManagePage() {
             <div className="p-6">
               <h3 className="text-lg font-bold text-white mb-3">
                 {deleteModal.isPermanent
-                  ? '⚠️ Permanently Delete Product'
-                  : 'Delete Product'}
+                  ? '⚠️ Permanently Delete Product' + (deleteModal.isMultiple ? 's' : '')
+                  : 'Delete Product' + (deleteModal.isMultiple ? 's' : '')}
               </h3>
 
               <div className="mb-6">
@@ -501,30 +735,39 @@ export default function ProductsManagePage() {
                       <span className="text-red-400 font-semibold">
                         permanently delete
                       </span>{' '}
-                      this product?
+                      {deleteModal.isMultiple
+                        ? `${selectedProducts.length} product(s)`
+                        : 'this product'}?
                     </p>
-                    <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
-                      <p className="text-red-300 font-medium">
-                        "{deleteModal.product?.name}"
-                      </p>
-                    </div>
+                    {!deleteModal.isMultiple && (
+                      <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
+                        <p className="text-red-300 font-medium">
+                          "{deleteModal.product?.name}"
+                        </p>
+                      </div>
+                    )}
                     <p className="text-sm text-gray-400">
                       ⚠️ This action cannot be undone and will remove all data
-                      associated with this product.
+                      associated with {deleteModal.isMultiple ? 'these products' : 'this product'}.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <p className="text-gray-300">
-                      Are you sure you want to delete this product?
+                      Are you sure you want to delete{' '}
+                      {deleteModal.isMultiple
+                        ? `${selectedProducts.length} product(s)`
+                        : 'this product'}?
                     </p>
-                    <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
-                      <p className="text-white font-medium">
-                        "{deleteModal.product?.name}"
-                      </p>
-                    </div>
+                    {!deleteModal.isMultiple && (
+                      <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
+                        <p className="text-white font-medium">
+                          "{deleteModal.product?.name}"
+                        </p>
+                      </div>
+                    )}
                     <p className="text-sm text-gray-400">
-                      The product will be marked as deleted and can be restored
+                      {deleteModal.isMultiple ? 'The products' : 'The product'} will be marked as deleted and can be restored
                       later.
                     </p>
                   </div>
@@ -538,6 +781,7 @@ export default function ProductsManagePage() {
                       show: false,
                       product: null,
                       isPermanent: false,
+                      isMultiple: false,
                     })
                   }
                   className="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
@@ -566,27 +810,32 @@ export default function ProductsManagePage() {
           <div className="bg-gray-800 rounded-xl w-full max-w-md border border-gray-700 shadow-2xl">
             <div className="p-6">
               <h3 className="text-lg font-bold text-white mb-3">
-                ♻️ Restore Product
+                ♻️ Restore Product{restoreModal.isMultiple ? 's' : ''}
               </h3>
 
               <div className="mb-6 space-y-2">
                 <p className="text-gray-300">
-                  Are you sure you want to restore this product?
+                  Are you sure you want to restore{' '}
+                  {restoreModal.isMultiple
+                    ? `${selectedProducts.length} product(s)`
+                    : 'this product'}?
                 </p>
-                <div className="bg-green-900/20 border border-green-800 rounded-lg p-3">
-                  <p className="text-green-300 font-medium">
-                    "{restoreModal.product?.name}"
-                  </p>
-                </div>
+                {!restoreModal.isMultiple && (
+                  <div className="bg-green-900/20 border border-green-800 rounded-lg p-3">
+                    <p className="text-green-300 font-medium">
+                      "{restoreModal.product?.name}"
+                    </p>
+                  </div>
+                )}
                 <p className="text-sm text-gray-400">
-                  The product will be restored and unmarked as deleted.
+                  {restoreModal.isMultiple ? 'The products' : 'The product'} will be restored and unmarked as deleted.
                 </p>
               </div>
 
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() =>
-                    setRestoreModal({ show: false, product: null })
+                    setRestoreModal({ show: false, product: null, isMultiple: false })
                   }
                   className="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
                 >
