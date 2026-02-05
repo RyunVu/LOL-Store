@@ -1,8 +1,9 @@
 using System.Net;
 using LoLStore.API.Models;
 using LoLStore.API.Models.DiscountModel;
+using LoLStore.Core.Constants;
 using LoLStore.Core.Contracts;
-using LoLStore.Core.Entities;
+using LoLStore.Core.DTO.Discounts;
 using LoLStore.Core.Queries;
 using LoLStore.Services.Shop;
 using LoLStore.Services.Shop.Discounts;
@@ -21,9 +22,12 @@ public static class DiscountEndpoints
 
         #region GET Methods
 
-        builder.MapGet("/", GetPagedDiscounts)
+        builder.MapGet("/", GetDiscounts)
+            .Produces<ApiResponse<IPagedList<DiscountDto>>>();
+
+        builder.MapGet("/byManager", GetDiscountsByManager)
             .RequireAuthorization("RequireManagerRole")
-            .Produces<ApiResponse<PaginationResult<DiscountDto>>>();
+            .Produces<ApiResponse<IPagedList<DiscountAdminDto>>>();
 
         builder.MapGet("/{id:guid}", GetDiscountById)
             .Produces<ApiResponse<DiscountDto>>();
@@ -55,7 +59,7 @@ public static class DiscountEndpoints
         return app;
     }
 
-    private static async Task<IResult> GetPagedDiscounts(
+    private static async Task<IResult> GetDiscounts(
         [AsParameters] DiscountFilterModel model,
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
@@ -72,12 +76,35 @@ public static class DiscountEndpoints
         return Results.Ok(ApiResponse.Success(paginationResult));
     }
 
+        private static async Task<IResult> GetDiscountsByManager(
+        [AsParameters] DiscountManagerFilterModel model,
+        [FromServices] IDiscountRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        var condition = mapper.Map<DiscountQuery>(model);
+        
+        if (condition.DateFilter == DateFilterType.Deleted)
+        {
+            condition.IsDeleted = true;
+        }
+
+        var discounts = await repository.GetPagedDiscountAsync(
+            condition,
+            model,
+            p => p.ProjectToType<DiscountAdminDto>());
+
+        var paginationResult = new PaginationResult<DiscountAdminDto>(discounts);
+
+        return Results.Ok(ApiResponse.Success(paginationResult));
+    }
+
+
     private static async Task<IResult> GetDiscountById(
         [FromRoute] Guid id,
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
     {
-        var discount = await repository.GetDiscountByIdAsync(id);
+        var discount = await repository.GetByIdAsync(id);
 
         if (discount == null)
         {
@@ -94,7 +121,7 @@ public static class DiscountEndpoints
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
     {
-        var discount = await repository.GetDiscountByCodeAsync(code);
+        var discount = await repository.GetByCodeAsync(code);
 
         if (discount == null)
         {
@@ -109,22 +136,18 @@ public static class DiscountEndpoints
     private static async Task<IResult> AddDiscount(
         [FromBody] DiscountEditModel model,
         [FromServices] IDiscountRepository repository,
+        [FromServices] IDiscountService service,
         [FromServices] IMapper mapper)
     {
-        if (await repository.IsDiscountExistedAsync(Guid.Empty, model.Code))
-        {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.Conflict,
-                $"Discount code '{model.Code}' already exists."));
-        }
+        var dto = mapper.Map<CreateDiscountDto>(model);
+        var result = await service.CreateAsync(dto);
 
-        var discount = mapper.Map<Discount>(model);
-
-        await repository.AddOrUpdateDiscountAsync(discount);
-
-        return Results.Ok(ApiResponse.Success(
-            mapper.Map<DiscountDto>(discount),
-            HttpStatusCode.Created));
+        return Results.Created(
+            $"/api/discounts/{result}",
+            ApiResponse.Success(
+                result,
+                HttpStatusCode.Created)
+        );
     }
 
     private static async Task<IResult> UpdateDiscount(
@@ -133,28 +156,21 @@ public static class DiscountEndpoints
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
     {
-        if (await repository.IsDiscountExistedAsync(id, model.Code))
+        var existingDiscount = await repository.GetByIdAsync(id);
+        if (existingDiscount == null)
         {
             return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.Conflict,
-                $"Discount code '{model.Code}' already exists."));
-        }
-
-        var discount = await repository.GetDiscountByIdAsync(id);
-        if (discount == null)
-        {
-            return Results.NotFound(ApiResponse.Fail(
                 HttpStatusCode.NotFound,
                 "Discount not found."));
         }
 
-        mapper.Map(model, discount);
+        var dto = mapper.Map<UpdateDiscountDto>(model);
+        dto.Id = id;
 
-        await repository.AddOrUpdateDiscountAsync(discount);
+        await repository.SaveChangesAsync();
 
         return Results.Ok(ApiResponse.Success(
-            mapper.Map<DiscountDto>(discount),
-            HttpStatusCode.OK));
+            mapper.Map<DiscountDto>(existingDiscount)));
     }
 
     private static async Task<IResult> CheckValidDiscount(

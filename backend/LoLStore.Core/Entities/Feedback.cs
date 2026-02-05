@@ -16,7 +16,7 @@ public class Feedback
 
     // Navigation properties
     public Product Product { get; set; } = null!;
-    public IList<FeedbackPicture> Pictures { get; set; } = new List<FeedbackPicture>();
+    public ICollection<FeedbackPicture> Pictures { get; set; } = new List<FeedbackPicture>();
 }
 
 public class FeedbackPicture

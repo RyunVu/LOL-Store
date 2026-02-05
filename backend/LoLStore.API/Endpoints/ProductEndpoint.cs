@@ -128,11 +128,14 @@ public static class ProductEndpoint
 
         model.SortColumn =
             SortColumnResolver.Resolve<Product>(model.DateFilter, nameof(Product.Name));
+
         model.PageSize ??= 20;
+
         if (query.DateFilter == DateFilterType.Deleted)
         {
             query.IsDeleted = true;
         }
+        
         var products = await repository.GetPagedProductsAsync(
             query,
             model,

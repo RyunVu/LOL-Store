@@ -1,3 +1,5 @@
+using LoLStore.Core.Constants;
+
 namespace LoLStore.Core.Queries;
 
 public class DiscountQuery
@@ -24,4 +26,9 @@ public class DiscountQuery
     public int? Year { get; set; }
     public int? Month { get; set; }
     public int? Day { get; set; }
+    
+    public bool? IsDeleted { get; set; }
+    public DiscountStatus? Status { get; set; }
+    public DateFilterType? DateFilter { get; set; }    
+    public SortOrder SortOrder { get; set; } = SortOrder.Desc;
 }

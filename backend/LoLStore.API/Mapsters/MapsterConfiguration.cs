@@ -9,6 +9,7 @@ using LoLStore.API.Models.UserModel;
 using LoLStore.Core.Constants;
 using LoLStore.Core.DTO;
 using LoLStore.Core.DTO.Categories;
+using LoLStore.Core.DTO.Discounts;
 using LoLStore.Core.DTO.Products;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
@@ -79,33 +80,27 @@ public class MapsterConfiguration : IRegister
         config.NewConfig<PictureInputModel, PictureInputDto>();
 
         // Product -> ProductDto
-            TypeAdapterConfig<Product, ProductDto>
-                .NewConfig()
+        config.NewConfig<Product, ProductDto>()
                 .Map(dest => dest.FinalPrice,
                     src => src.Price - (src.Price * src.Discount / 100));
 
-            // Product -> ProductAdminDto
-            TypeAdapterConfig<Product, ProductAdminDto>
-                .NewConfig()
+        // Product -> ProductAdminDto
+        config.NewConfig<Product, ProductAdminDto>()
                 .Inherits<Product, ProductDto>();
 
-            // ProductEditModel -> CreateProductDto
-            TypeAdapterConfig<ProductEditModel, CreateProductDto>
-                .NewConfig();
+        // ProductEditModel -> CreateProductDto
+        config.NewConfig<ProductEditModel, CreateProductDto>();
 
-            // (Guid, ProductEditModel) -> UpdateProductDto
-            TypeAdapterConfig<(Guid Id, ProductEditModel Model), UpdateProductDto>
-                .NewConfig()
-                .Map(dest => dest.Id, src => src.Id)
-                .Map(dest => dest, src => src.Model);
+        // (Guid, ProductEditModel) -> UpdateProductDto
+        config.NewConfig<(Guid Id, ProductEditModel Model), UpdateProductDto>()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest, src => src.Model);
 
-            // ProductFilterModel -> ProductQuery
-            TypeAdapterConfig<ProductFilterModel, ProductQuery>
-                .NewConfig();
+        // ProductFilterModel -> ProductQuery
+        config.NewConfig<ProductFilterModel, ProductQuery>();
 
-            // ProductManagerFilterModel -> ProductQuery
-            TypeAdapterConfig<ProductManagerFilterModel, ProductQuery>
-                .NewConfig();
+        // ProductManagerFilterModel -> ProductQuery
+        config.NewConfig<ProductManagerFilterModel, ProductQuery>();
 
         config.NewConfig<ProductEditModel, Product>()
             .Ignore(dest => dest.Categories)
@@ -125,7 +120,9 @@ public class MapsterConfiguration : IRegister
             .Map(dest => dest.UrlSlug,
                 src => src.Product != null ? src.Product.UrlSlug : string.Empty);
 
-        config.NewConfig<Discount, DiscountDto>()
+        config.NewConfig<Discount, DiscountAdminDto>()
+            .Map(dest => dest.OrderCount, 
+                src => src.Orders == null ? 0 : src.Orders.Count)
             .Map(dest => dest.Status, src =>
                 !src.IsActive
                     ? DiscountStatus.Inactive
@@ -136,13 +133,31 @@ public class MapsterConfiguration : IRegister
                             : DiscountStatus.Active
             );
 
-        config.NewConfig<DiscountEditModel, Discount>()
-            .Ignore(dest => dest.Id)
-            .Ignore(dest => dest.CreatedAt)
-            .Ignore(dest => dest.IsDeleted)
-            .Ignore(dest => dest.TimesUsed) 
-            .Ignore(dest => dest.UpdatedAt!)
-            .Ignore(dest => dest.DeletedAt!);
+        config.NewConfig<Discount, DiscountDto>()
+            .Map(dest => dest.OrderCount, 
+                src => src.Orders == null ? 0 : src.Orders.Count)
+            .Map(dest => dest.Status, src =>
+                !src.IsActive
+                    ? DiscountStatus.Inactive
+                    : DateTime.UtcNow < src.StartDate
+                        ? DiscountStatus.Scheduled
+                        : DateTime.UtcNow > src.EndDate
+                            ? DiscountStatus.Expired
+                            : DiscountStatus.Active
+            );
+
+        config.NewConfig<DiscountEditModel, CreateDiscountDto>();
+
+        config.NewConfig<(Guid id, DiscountEditModel model), UpdateDiscountDto>()
+            .Map(dest => dest.Id, src => src.id)
+            .Map(dest => dest.Code, src => src.model.Code)
+            .Map(dest => dest.DiscountValue, src => src.model.DiscountValue)
+            .Map(dest => dest.IsPercentage, src => src.model.IsPercentage)
+            .Map(dest => dest.MinimunOrderAmount, src => src.model.MinimunOrderAmount)
+            .Map(dest => dest.MaxUses, src => src.model.MaxUses)
+            .Map(dest => dest.StartDate, src => src.model.StartDate)
+            .Map(dest => dest.EndDate, src => src.model.EndDate)
+            .Map(dest => dest.IsActive, src => src.model.IsActive);
 
         config.NewConfig<DiscountFilterModel, DiscountQuery>()
             .Map(dest => dest.Code, src => src.Code)
@@ -151,9 +166,23 @@ public class MapsterConfiguration : IRegister
             .Map(dest => dest.MinimunOrderAmount, src => src.MinimunOrderAmount)
             .Map(dest => dest.IsActive, src => src.IsActive)
             .Map(dest => dest.StartDate, src => src.StartDate)
-            .Map(dest => dest.EndDate, src => src.EndDate)
-            .Map(dest => dest.Year, src => src.Year)
-            .Map(dest => dest.Month, src => src.Month)
-            .Map(dest => dest.Day, src => src.Day);
+            .Map(dest => dest.EndDate, src => src.EndDate);
+
+        config.NewConfig<DiscountManagerFilterModel, DiscountQuery>()
+            .Map(dest => dest.Code, src => src.Code)
+            .Map(dest => dest.IsActive, src => src.IsActive)
+            .Map(dest => dest.IsDeleted, src => src.IsDeleted)
+            .Map(dest => dest.ValidNow, src => src.ValidNow)
+            .Map(dest => dest.Status, src => src.Status)
+            .Map(dest => dest.DateFilter, src => src.DateFilter);
+
+        config.NewConfig<DiscountEditModel, Discount>()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.CreatedAt)
+            .Ignore(dest => dest.IsDeleted)
+            .Ignore(dest => dest.TimesUsed) 
+            .Ignore(dest => dest.UpdatedAt!)
+            .Ignore(dest => dest.DeletedAt!);       
+
     }
 }

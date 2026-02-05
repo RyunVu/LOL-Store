@@ -16,5 +16,5 @@ public class Category : BaseEntity
     public bool IsActive { get; set; }
     
     // Navigation properties
-    public IList<Product> Products { get; set; } = new List<Product>();
+    public ICollection<Product> Products { get; set; } = new List<Product>();
 }
