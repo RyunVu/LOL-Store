@@ -127,7 +127,7 @@ public static class ProductEndpoint
         var query = mapper.Map<ProductQuery>(model);
 
         model.SortColumn =
-            SortColumnResolver.Resolve<Product>(model.DateFilter, nameof(Product.Name));
+            SortColumnResolver.DateFilterResolve<Product>(model.DateFilter, nameof(Product.Name));
 
         model.PageSize ??= 20;
 

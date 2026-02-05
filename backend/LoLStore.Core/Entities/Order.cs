@@ -38,5 +38,5 @@ public class Order : IEntity
     // Navigation properties
     public User User { get; set; } = null!;
     public Discount? Discount { get; set; }  // Nullable vì có thể không có discount
-    public IList<OrderDetail> OrderItems { get; set; } = new List<OrderDetail>();
+    public ICollection<OrderDetail> OrderItems { get; set; } = new List<OrderDetail>();
 }

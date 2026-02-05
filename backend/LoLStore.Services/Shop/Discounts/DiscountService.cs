@@ -48,11 +48,6 @@ public class DiscountService : IDiscountService
             ?? throw new KeyNotFoundException($"Discount not found.");
         
         var code = dto.Code.Trim().ToUpper();
-        if (!string.Equals(discount.Code, code, StringComparison.OrdinalIgnoreCase) &&
-            await _repo.IsDiscountExistedAsync(code, ct))
-        {
-            throw new InvalidOperationException($"Discount with code '{code}' already exists.");
-        }
 
         discount.Code = code;
         discount.IsActive = dto.IsActive;
@@ -132,7 +127,7 @@ public class DiscountService : IDiscountService
         var now = DateTime.UtcNow;
 
         if (!discount.IsActive)
-            return (DiscountApplyResult.Expired, null);
+            return (DiscountApplyResult.Inactive, null);
 
         if (discount.StartDate > now || discount.EndDate < now)
             return (DiscountApplyResult.Expired, null);

@@ -44,7 +44,7 @@ export const categoriesApi = {
 
   toggleActive: async (id) => {
     if (!id) throw new Error('Category id is required')
-    await apiClient.get(`/categories/toggleShowOnMenu/${id}`)
+    await apiClient.put(`/categories/toggleShowOnMenu/${id}`)
   },
 
   toggleSoftDeleteCategory: async (id) => {

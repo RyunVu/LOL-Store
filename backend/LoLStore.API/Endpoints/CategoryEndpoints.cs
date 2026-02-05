@@ -38,9 +38,6 @@ public static class CategoryEndpoints
         builder.MapGet("/RelatedCategories", GetRelatedCategories)
             .Produces<ApiResponse<IList<CategoryDto>>>();
 
-        builder.MapGet("/toggleShowOnMenu/{id:guid}", ToggleShowOnMenu)
-            .RequireAuthorization("RequireManagerRole");
-
         #endregion
 
         # region POST Method
@@ -53,6 +50,9 @@ public static class CategoryEndpoints
         # region PUT Method
 
         builder.MapPut("/{id:guid}", UpdateCategory)
+            .RequireAuthorization("RequireManagerRole");
+
+        builder.MapPut("/toggleShowOnMenu/{id:guid}", ToggleShowOnMenu)
             .RequireAuthorization("RequireManagerRole");
 
         # endregion
@@ -97,7 +97,7 @@ public static class CategoryEndpoints
         var query = mapper.Map<CategoryQuery>(model);
 
         model.SortColumn =
-            SortColumnResolver.Resolve<Category>(model.DateFilter, nameof(Category.Name));
+            SortColumnResolver.DateFilterResolve<Category>(model.DateFilter, nameof(Category.Name));
 
         if (query.DateFilter == DateFilterType.Deleted)
         {
@@ -200,6 +200,7 @@ public static class CategoryEndpoints
         [FromServices] ICategoryService service,
         [FromServices] IMapper mapper)
     {
+
         var dto = mapper.Map<UpdateCategoryDto>((id, model));
 
         await service.UpdateAsync(dto);

@@ -4,7 +4,9 @@ using LoLStore.API.Models.DiscountModel;
 using LoLStore.Core.Constants;
 using LoLStore.Core.Contracts;
 using LoLStore.Core.DTO.Discounts;
+using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
+using LoLStore.Services.Helpers;
 using LoLStore.Services.Shop;
 using LoLStore.Services.Shop.Discounts;
 using LoLStore.WebAPI.Models.DiscountModel;
@@ -51,8 +53,20 @@ public static class DiscountEndpoints
         #region PUT Methods
 
         builder.MapPut("/{id:guid}", UpdateDiscount)
-            .RequireAuthorization("RequireManagerRole")
-            .Produces<ApiResponse<DiscountDto>>();
+            .RequireAuthorization("RequireManagerRole");
+
+        builder.MapPut("/toggleShowOnMenu/{id:guid}", ToggleActiveStatus)
+            .RequireAuthorization("RequireManagerRole");
+
+        #endregion
+
+        #region DELETE Methods
+
+        builder.MapDelete("/toggleDelete/{id:guid}", ToggleDeleteDiscount)
+            .RequireAuthorization("RequireManagerRole");
+
+        builder.MapDelete("/{id:guid}", DeleteDiscount)
+            .RequireAuthorization("RequireAdminRole");
 
         #endregion
 
@@ -82,7 +96,12 @@ public static class DiscountEndpoints
         [FromServices] IMapper mapper)
     {
         var condition = mapper.Map<DiscountQuery>(model);
-        
+
+        model.SortColumn = 
+            SortColumnResolver.DateFilterResolve<Discount>(model.DateFilter, nameof(Discount.Code));
+
+        model.SortColumn = StatusFilterResolve<Discount>(model.Status, model.SortColumn);
+
         if (condition.DateFilter == DateFilterType.Deleted)
         {
             condition.IsDeleted = true;
@@ -153,25 +172,19 @@ public static class DiscountEndpoints
     private static async Task<IResult> UpdateDiscount(
         [FromRoute] Guid id,
         [FromBody] DiscountEditModel model,
+        [FromServices] IDiscountService service,
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
-    {
-        var existingDiscount = await repository.GetByIdAsync(id);
-        if (existingDiscount == null)
-        {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.NotFound,
-                "Discount not found."));
-        }
+    {        
+        var dto = mapper.Map<UpdateDiscountDto>((id, model));
 
-        var dto = mapper.Map<UpdateDiscountDto>(model);
-        dto.Id = id;
-
-        await repository.SaveChangesAsync();
+        await service.UpdateAsync(dto);
 
         return Results.Ok(ApiResponse.Success(
-            mapper.Map<DiscountDto>(existingDiscount)));
+            ApiResponse.Success("Discount updated successfully.", HttpStatusCode.NoContent)
+        ));
     }
+
 
     private static async Task<IResult> CheckValidDiscount(
         [FromBody] DiscountOrdersModel model,
@@ -214,4 +227,52 @@ public static class DiscountEndpoints
 
     }
 
+    private static string StatusFilterResolve<TEntity>(
+        DiscountStatus? statusFilter,
+        string defaultColumn)
+        where TEntity : BaseEntity
+    {
+        return statusFilter switch
+        {
+            DiscountStatus.Active => nameof(Discount.Status),
+            DiscountStatus.Inactive => nameof(Discount.Status),
+            DiscountStatus.Expired => nameof(Discount.Status),
+            DiscountStatus.Scheduled => nameof(Discount.Status),
+            _ => defaultColumn
+        };
+    }
+
+    private static async Task<IResult> ToggleActiveStatus(
+        [FromRoute] Guid id,
+        [FromServices] IDiscountService service,
+        CancellationToken ct)
+    {
+        await service.ToggleActiveAsync(id, ct);
+        return Results.Ok(
+            ApiResponse.Success("Discount visibility toggled.", HttpStatusCode.NoContent)
+        );
+    }
+
+    private static async Task<IResult> ToggleDeleteDiscount(
+        [FromRoute] Guid id,
+        [FromServices] IDiscountService service,
+        CancellationToken ct)
+    {
+        await service.ToggleSoftDeleteAsync(id, ct);
+        return Results.Ok(
+                ApiResponse.Success("Discount soft-deleted successfully.", HttpStatusCode.NoContent)
+            );
+    }
+
+    private static async Task<IResult> DeleteDiscount(
+        [FromRoute] Guid id,
+        [FromServices] IDiscountService service,
+        CancellationToken ct)
+    {
+        await service.DeletePermanentlyAsync(id, ct);
+
+        return Results.Ok(
+            ApiResponse.Success("Discount deleted permanently.", HttpStatusCode.NoContent)
+        );
+    }
 }

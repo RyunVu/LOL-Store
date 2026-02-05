@@ -5,7 +5,7 @@ namespace LoLStore.Services.Helpers;
 
 public static class SortColumnResolver
 {
-    public static string Resolve<TEntity>(
+    public static string DateFilterResolve<TEntity>(
         DateFilterType? dateFilter,
         string defaultColumn)
         where TEntity : BaseEntity
@@ -18,5 +18,5 @@ public static class SortColumnResolver
             _ => defaultColumn
         };
     }
-
 }
+

@@ -87,11 +87,6 @@ public class DiscountRepository : IDiscountRepository
             discounts = discounts.Where(d => d.MinimunOrderAmount >= query.MinimunOrderAmount.Value);
         }
 
-        if (query.IsActive.HasValue)
-        {
-            discounts = discounts.Where(d => d.IsActive == query.IsActive.Value);
-        }
-
         if (query.StartDate.HasValue)
         {
             discounts = discounts.Where(d => d.StartDate >= query.StartDate.Value);
@@ -112,18 +107,6 @@ public class DiscountRepository : IDiscountRepository
         }
 
         return discounts;
-        // return _context.Set<Discount>()
-        //     .WhereIf(query.IsActive == true,
-        //         d => d.IsActive &&
-        //              d.StartDate <= now &&
-        //              d.EndDate >= now &&
-        //              (d.MaxUses == null || d.TimesUsed < d.MaxUses))
-        //     .WhereIf(query.Day.HasValue,
-        //         d => d.CreatedAt.Day == query.Day)
-        //     .WhereIf(query.Month.HasValue,
-        //         d => d.CreatedAt.Month == query.Month)
-        //     .WhereIf(query.Year.HasValue,
-        //         d => d.CreatedAt.Year == query.Year);
     }
 
     // Queries
@@ -214,31 +197,42 @@ public class DiscountRepository : IDiscountRepository
         DiscountQuery query)
     {
         if (!query.Status.HasValue)
-        {
             return discounts;
-        }
 
+        var now = DateTime.UtcNow;
         var isAsc = query.SortOrder == SortOrder.Asc;
 
-        return query.Status.Value switch
+        discounts = discounts.Where(d => !d.IsDeleted);
+
+        discounts = query.Status.Value switch
         {
-            DiscountStatus.Active => isAsc
-                ? discounts.Where(d => d.IsActive && d.StartDate <= DateTime.UtcNow && d.EndDate >= DateTime.UtcNow)
-                : discounts.Where(d => d.IsActive && d.StartDate <= DateTime.UtcNow && d.EndDate >= DateTime.UtcNow).OrderByDescending(d => d.CreatedAt),
+            DiscountStatus.Active =>
+                discounts.Where(d =>
+                    d.IsActive &&
+                    d.StartDate <= now &&
+                    d.EndDate >= now),
 
-            DiscountStatus.Inactive => isAsc
-                ? discounts.Where(d => !d.IsActive)
-                : discounts.Where(d => !d.IsActive).OrderByDescending(d => d.CreatedAt),
+            DiscountStatus.Scheduled =>
+                discounts.Where(d =>
+                    d.IsActive &&
+                    d.StartDate > now),
 
-            DiscountStatus.Scheduled => isAsc
-                ? discounts.Where(d => !d.IsActive && d.StartDate > DateTime.UtcNow)
-                : discounts.Where(d => !d.IsActive && d.StartDate > DateTime.UtcNow).OrderByDescending(d => d.CreatedAt),
+            DiscountStatus.Expired =>
+                discounts.Where(d =>
+                    d.IsActive &&
+                    d.EndDate < now),
 
-            DiscountStatus.Expired => isAsc
-                ? discounts.Where(d => !d.IsActive && d.EndDate < DateTime.UtcNow)
-                : discounts.Where(d => !d.IsActive && d.EndDate < DateTime.UtcNow).OrderByDescending(d => d.CreatedAt),
+            DiscountStatus.Inactive =>
+                discounts.Where(d =>
+                    !d.IsActive),
 
             _ => discounts
         };
+
+        return isAsc
+            ? discounts.OrderBy(d => d.CreatedAt)
+            : discounts.OrderByDescending(d => d.CreatedAt);
     }
+
+
 }

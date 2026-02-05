@@ -17,7 +17,6 @@ export default function DiscountEditPage() {
     discountsApi
       .getDiscountById(id)
       .then((data) => {
-        console.log('DISCOUNT DETAIL RESPONSE:', data)
         setDiscount(data)
       })
       .catch((err) => {
@@ -34,6 +33,8 @@ export default function DiscountEditPage() {
     setLoading(true)
     try {
       await discountsApi.updateDiscount(id, formData)
+      console.log(formData);
+      
       navigate('/admin/discounts')
     } catch (error) {
       console.error('Failed to update discount:', error)

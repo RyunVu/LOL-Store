@@ -4,6 +4,7 @@ public enum DiscountApplyResult
 {
     Valid,
     NotFound,
+    Inactive,
     Expired,
     MinimumNotMet,
     UsageExceeded
