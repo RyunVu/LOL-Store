@@ -26,12 +26,11 @@ const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
 const DashboardPage = lazy(() => import('@/pages/admin/DashboardPage'))
 
 // Products
-const ProductsManagePage = lazy(() => import('@/pages/admin/products/ProductManagePage')
-)
-const ProductCreatePage = lazy(() => import('@/pages/admin/products/ProductCreatePage')
-)
-const ProductEditPage = lazy(() => import('@/pages/admin/products/ProductEditPage')
-)
+const ProductsManagePage = lazy(() => import('@/pages/admin/products/ProductManagePage'))
+const ProductCreatePage = lazy(() => import('@/pages/admin/products/ProductCreatePage'))
+const ProductEditPage = lazy(() => import('@/pages/admin/products/ProductEditPage'))
+
+const ProductDetailPage = lazy(() => import('@/pages/public/ProductDetail'))
 
 // Categories
 const CategoryPage = lazy(() => import('@/pages/admin/categories/CategoryManagePage'))
@@ -80,6 +79,14 @@ export const router = createBrowserRouter([
             element: (
               <SuspenseWrapper>
                 <ShopPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: '/product/:id',
+            element: (
+              <SuspenseWrapper>
+                <ProductDetailPage />
               </SuspenseWrapper>
             ),
           },

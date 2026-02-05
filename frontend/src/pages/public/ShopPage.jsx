@@ -57,8 +57,6 @@ export default function ShopPage() {
             (c) => c.isActive
           )
         
-        console.log(visibleCategories);
-        
         setCategories(visibleCategories)
       } catch (error) {
         console.error('Failed to fetch categories:', error)

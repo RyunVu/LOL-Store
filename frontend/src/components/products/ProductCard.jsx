@@ -5,14 +5,8 @@ import { useCartStore } from '@/store/cartStore'
 export default function ProductCard({ product }) {
   const addItem = useCartStore((state) => state.addItem)
 
-  /* =======================
-     SAFE FALLBACK
-     ======================= */
   const safeProduct = product ?? {}
 
-  /* =======================
-     PRICE
-     ======================= */
   const discountedPrice = useMemo(() => {
     const price = safeProduct.price ?? 0
     const discount = safeProduct.discount ?? 0
@@ -21,9 +15,6 @@ export default function ProductCard({ product }) {
     return price * (1 - discount / 100)
   }, [safeProduct.price, safeProduct.discount])
 
-  /* =======================
-     IMAGE
-     ======================= */
   const imageUrl = useMemo(() => {
     if (safeProduct.pictures?.length > 0 && safeProduct.pictures[0]?.path) {
       const baseUrl =
@@ -35,9 +26,6 @@ export default function ProductCard({ product }) {
 
   const isOutOfStock = (safeProduct.quantity ?? 0) === 0
 
-  /* =======================
-     EARLY RETURN (OK)
-     ======================= */
   if (!product) return null
 
   const handleAddToCart = (e) => {
@@ -48,7 +36,7 @@ export default function ProductCard({ product }) {
 
   return (
     <Link
-      to={`/product/${safeProduct.urlSlug}`}
+      to={`/product/${safeProduct.id}`}
       className="group block bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all"
     >
       {/* IMAGE */}
