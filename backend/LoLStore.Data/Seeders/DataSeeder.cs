@@ -136,7 +136,7 @@ public class DataSeeder : IDataSeeder
             Code = "WELCOME10",
             DiscountValue = 10, // 10% off
             IsPercentage = true,
-            MinimunOrderAmount = 0,
+            MinimumOrderAmount = 0,
             MaxUses = 100,
             TimesUsed = 0,
             StartDate = DateTime.UtcNow,
@@ -150,7 +150,7 @@ public class DataSeeder : IDataSeeder
             Code = "SAVE50",
             DiscountValue = 50, // $50 off
             IsPercentage = false,
-            MinimunOrderAmount = 300, // only for big orders
+            MinimumOrderAmount = 300, // only for big orders
             MaxUses = 50,
             TimesUsed = 0,
             StartDate = DateTime.UtcNow,
@@ -164,7 +164,7 @@ public class DataSeeder : IDataSeeder
             Code = "WEEKEND5",
             DiscountValue = 5, // 5% off
             IsPercentage = true,
-            MinimunOrderAmount = 100,
+            MinimumOrderAmount = 100,
             MaxUses = null, // unlimited
             TimesUsed = 0,
             StartDate = DateTime.UtcNow.AddDays(-3), // started already

@@ -4,6 +4,7 @@ using LoLStore.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoLStore.Data.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    partial class StoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260209073329_AddJoinTableIndexes")]
+    partial class AddJoinTableIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -106,12 +109,15 @@ namespace LoLStore.Data.Migrations
                     b.Property<int?>("MaxUses")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("MinimumOrderAmount")
+                    b.Property<decimal?>("MinimunOrderAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<int>("TimesUsed")
                         .ValueGeneratedOnAdd()
@@ -668,8 +674,7 @@ namespace LoLStore.Data.Migrations
                 {
                     b.HasOne("LoLStore.Core.Entities.Discount", "Discount")
                         .WithMany("Orders")
-                        .HasForeignKey("DiscountId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("DiscountId");
 
                     b.HasOne("LoLStore.Core.Entities.User", "User")
                         .WithMany("Orders")
@@ -694,7 +699,7 @@ namespace LoLStore.Data.Migrations
                     b.HasOne("LoLStore.Core.Entities.Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_Products_Details");
 

@@ -120,8 +120,6 @@ public class ProductRepository : IProductRepository
     {
         return await _context.Set<Product>()
             .AsNoTracking()
-            .Include(p => p.Pictures)
-            .Include(p => p.Categories)
             .Where(IsPublicVisible())
             .Where(p => p.Quantity > 0 && p.IsActive)
             .OrderByDescending(p => p.CountOrder)
@@ -135,29 +133,16 @@ public class ProductRepository : IProductRepository
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(slug))
-        {
             return new List<Product>();
-        }
-
-        var product = await _context.Set<Product>()
-            .Include(p => p.Categories)
-            .FirstOrDefaultAsync(p => p.UrlSlug == slug, cancellationToken);
-
-        if (product == null || product.Categories.Count == 0)
-            return new List<Product>();
-
-        var categoryIds = product.Categories.Select(c => c.Id).ToList();
 
         return await _context.Set<Product>()
             .AsNoTracking()
-            .Include(p => p.Categories)
-            .Include(p => p.Pictures)
+            // .Include(p => p.Pictures)
+            // .Include(p => p.Categories)
             .Where(IsPublicVisible())
-            .Where(p =>
-                p.Id != product.Id &&
-                p.IsActive &&
-                !p.IsDeleted &&
-                p.Categories.Any(c => categoryIds.Contains(c.Id)))
+            .Where(p => p.UrlSlug != slug)
+            .Where(p => p.Categories.Any(c =>
+                c.Products.Any(cp => cp.UrlSlug == slug)))
             .OrderByDescending(p => p.CountOrder)
             .Take(num)
             .ToListAsync(cancellationToken);
@@ -477,19 +462,16 @@ public class ProductRepository : IProductRepository
     {
         var products = _context.Set<Product>()
             .AsNoTracking()
-            .Include(p => p.OrderItems)
-            .Include(p => p.Pictures)
-            .Include(p => p.Categories)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.Keyword))
         {
             var keyword = query.Keyword.Trim();
             products = products.Where(p =>
-                p.Name.Contains(keyword) ||
-                (p.Description ?? string.Empty).Contains(keyword) ||
-                p.Sku.Contains(keyword) ||
-                p.UrlSlug.Contains(keyword));
+                EF.Functions.Like(p.Name, $"%{keyword}%") ||
+                EF.Functions.Like(p.Sku, $"%{keyword}%") ||
+                EF.Functions.Like(p.UrlSlug, $"%{keyword}%") ||
+                EF.Functions.Like(p.Description ?? "", $"%{keyword}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(query.CategorySlug))
@@ -525,15 +507,13 @@ public class ProductRepository : IProductRepository
         if (query.MinPrice.HasValue)
         {
             products = products.Where(p =>
-                (p.Price - (p.Price * (decimal)p.Discount / 100m))
-                >= query.MinPrice.GetValueOrDefault());
+                EF.Property<decimal>(p, "DiscountedPrice") >= query.MinPrice.Value);
         }
 
         if (query.MaxPrice.HasValue)
         {
             products = products.Where(p =>
-                (p.Price - (p.Price * (decimal)p.Discount / 100m))
-                <= query.MaxPrice.GetValueOrDefault());
+                EF.Property<decimal>(p, "DiscountedPrice") <= query.MaxPrice.Value);
         }
 
         return products;

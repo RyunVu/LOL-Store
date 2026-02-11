@@ -10,10 +10,12 @@ using LoLStore.Core.Constants;
 using LoLStore.Core.DTO;
 using LoLStore.Core.DTO.Categories;
 using LoLStore.Core.DTO.Discounts;
+using LoLStore.Core.DTO.Orders;
 using LoLStore.Core.DTO.Products;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 using LoLStore.WebAPI.Models.DiscountModel;
+using LoLStore.WebAPI.Models.OrderModel;
 using Mapster;
 
 namespace LoLStore.API.Mapsters;
@@ -22,6 +24,9 @@ public class MapsterConfiguration : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
+        // ===================================================================
+        // CATEGORY MAPPINGS 
+        // ===================================================================
         config.NewConfig<Category, CategoryAdminDto>()
             .Map(dest => dest.ProductCount,
                 src => src.Products == null ? 0 : src.Products.Count);
@@ -79,46 +84,88 @@ public class MapsterConfiguration : IRegister
         
         config.NewConfig<PictureInputModel, PictureInputDto>();
 
-        // Product -> ProductDto
+        // ===================================================================
+        // PRODUCT MAPPINGS 
+        // ===================================================================
         config.NewConfig<Product, ProductDto>()
                 .Map(dest => dest.FinalPrice,
                     src => src.Price - (src.Price * src.Discount / 100));
 
-        // Product -> ProductAdminDto
         config.NewConfig<Product, ProductAdminDto>()
                 .Inherits<Product, ProductDto>();
 
-        // ProductEditModel -> CreateProductDto
         config.NewConfig<ProductEditModel, CreateProductDto>();
 
-        // (Guid, ProductEditModel) -> UpdateProductDto
         config.NewConfig<(Guid Id, ProductEditModel Model), UpdateProductDto>()
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest, src => src.Model);
 
-        // ProductFilterModel -> ProductQuery
         config.NewConfig<ProductFilterModel, ProductQuery>();
 
-        // ProductManagerFilterModel -> ProductQuery
         config.NewConfig<ProductManagerFilterModel, ProductQuery>();
 
         config.NewConfig<ProductEditModel, Product>()
             .Ignore(dest => dest.Categories)
             .Ignore(dest => dest.Pictures);
 
+        // ===================================================================
+        // ORDER MAPPINGS 
+        // ===================================================================
+
         config.NewConfig<OrderDetail, OrderDetailDto>()
-            .Map(dest => dest.Name,
-                src => src.Product != null ? src.Product.Name : string.Empty)
-            .Map(dest => dest.Sku,
-                src => src.Product != null ? src.Product.Sku : string.Empty)
+            .Map(dest => dest.OrderId, src => src.OrderId)
+            .Map(dest => dest.ProductId, src => src.ProductId)
+            .Map(dest => dest.Quantity, src => src.Quantity)
+            .Map(dest => dest.Price, src => src.Price)
+            .Map(dest => dest.Name, src => src.Product != null ? src.Product.Name : string.Empty)
+            .Map(dest => dest.Sku, src => src.Product != null ? src.Product.Sku : string.Empty)
+            .Map(dest => dest.UrlSlug, src => src.Product != null ? src.Product.UrlSlug : string.Empty)
             .Map(dest => dest.ImageUrl,
-                src => src.Product != null
-                    && src.Product.Pictures != null
-                    && src.Product.Pictures.Count > 0
-                    ? src.Product.Pictures.First().Path
-                    : string.Empty)
-            .Map(dest => dest.UrlSlug,
-                src => src.Product != null ? src.Product.UrlSlug : string.Empty);
+                src => src.Product != null && src.Product.Pictures != null
+                    ? src.Product.Pictures
+                        .Where(p => p.IsActive)
+                        .Select(p => p.Path)
+                        .FirstOrDefault() ?? string.Empty
+                    : string.Empty);
+
+        config.NewConfig<Order, OrderDto>()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest.CodeOrder, src => src.CodeOrder)
+            .Map(dest => dest.OrderDate, src => src.OrderDate)
+            .Map(dest => dest.Status, src => src.Status)
+            .Map(dest => dest.Name, src => src.Name)
+            .Map(dest => dest.Email, src => src.Email)
+            .Map(dest => dest.ShipAddress, src => src.ShipAddress)
+            .Map(dest => dest.Phone, src => src.Phone)
+            .Map(dest => dest.Note, src => src.Note)
+            .Map(dest => dest.DiscountAmount, src => src.DiscountAmount)
+            .Map(dest => dest.TotalAmount, src => src.TotalAmount)
+            .Map(dest => dest.Discount, src => src.Discount)
+            .Map(dest => dest.OrderItems, src => src.OrderItems);
+
+        config.NewConfig<Order, OrderAdminDto>()
+            .Inherits<Order, OrderDto>();
+
+        config.NewConfig<OrderEditModel, UpdateOrderDto>()
+            .Ignore(dest => dest.Id); 
+
+        config.NewConfig<(Guid id, OrderEditModel model), UpdateOrderDto>()
+            .Map(dest => dest.Id, src => src.id)
+            .Map(dest => dest.Name, src => src.model.Name)
+            .Map(dest => dest.ShipAddress, src => src.model.ShipAddress)
+            .Map(dest => dest.Phone, src => src.model.Phone)
+            .Map(dest => dest.Note, src => src.model.Note)
+            .Map(dest => dest.Email, src => src.model.Email)
+            .Map(dest => dest.DiscountCode, src => src.model.DiscountCode)
+            .Map(dest => dest.Items, src => src.model.Detail.Select(d => new OrderItemDto
+            {
+                ProductId = d.Id,       
+                Quantity = d.Quantity ?? 0
+            }));
+
+        // ===================================================================
+        // DISCOUNT MAPPINGS
+        // ===================================================================
 
         config.NewConfig<Discount, DiscountAdminDto>()
             .Map(dest => dest.OrderCount, 
@@ -183,6 +230,5 @@ public class MapsterConfiguration : IRegister
             .Ignore(dest => dest.TimesUsed) 
             .Ignore(dest => dest.UpdatedAt!)
             .Ignore(dest => dest.DeletedAt!);       
-
     }
 }

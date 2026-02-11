@@ -196,7 +196,7 @@ public static class CategoryEndpoints
 
     private static async Task<IResult> UpdateCategory(
         [FromRoute] Guid id,
-        CategoryEditModel model,
+        [FromBody] CategoryEditModel model,
         [FromServices] ICategoryService service,
         [FromServices] IMapper mapper)
     {

@@ -7,6 +7,7 @@ using LoLStore.Data.Seeders;
 using LoLStore.Services.Shop;
 using LoLStore.Services.Shop.Categories;
 using LoLStore.Services.Shop.Discounts;
+using LoLStore.Services.Shop.Orders;
 using LoLStore.Services.Shop.Products;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -60,9 +61,12 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<IDiscountService, DiscountService>();
         builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
         
+        builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+        builder.Services.AddScoped<IOrderService, OrderService>();
+        
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
-        builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+        
         builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
         builder.Services.AddScoped<ExtraProduct>();
         return builder;

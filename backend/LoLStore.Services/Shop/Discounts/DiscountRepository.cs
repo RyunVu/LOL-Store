@@ -84,7 +84,7 @@ public class DiscountRepository : IDiscountRepository
 
         if (query.MinimunOrderAmount.HasValue)
         {
-            discounts = discounts.Where(d => d.MinimunOrderAmount >= query.MinimunOrderAmount.Value);
+            discounts = discounts.Where(d => d.MinimumOrderAmount >= query.MinimunOrderAmount.Value);
         }
 
         if (query.StartDate.HasValue)

@@ -66,6 +66,27 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 		builder.HasIndex(p => p.UrlSlug)
 			.IsUnique();
 
+		// Common filters
+		builder.HasIndex(p => new { p.IsActive, p.IsDeleted });
+
+		// Sorting / top sales
+		builder.HasIndex(p => p.CountOrder);
+
+		// Date filters
+		builder.HasIndex(p => p.CreatedAt);
+		builder.HasIndex(p => p.UpdatedAt);
+
+		// Optional: keyword search helpers
+		builder.HasIndex(p => p.Name);
+
+		builder.Property<decimal>("DiscountedPrice")
+			.HasColumnType("decimal(18,2)")
+			.HasComputedColumnSql(
+				"[Price] - ([Price] * [Discount] / 100.0)",
+				stored: true);
+
+		builder.HasIndex("DiscountedPrice");
+
 		builder.HasMany(p => p.Categories)
 			.WithMany(c => c.Products)
 			.UsingEntity<Dictionary<string, object>>(
@@ -73,21 +94,20 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 				j => j
 					.HasOne<Category>()
 					.WithMany()
-					.HasForeignKey("CategoriesId")
-					.HasConstraintName("FK_ProductCategories_Categories")
-					.OnDelete(DeleteBehavior.Cascade),
+					.HasForeignKey("CategoriesId"),
 				j => j
 					.HasOne<Product>()
 					.WithMany()
-					.HasForeignKey("ProductsId")
-					.HasConstraintName("FK_ProductCategories_Products")
-					.OnDelete(DeleteBehavior.Cascade),
+					.HasForeignKey("ProductsId"),
 				j =>
 				{
 					j.HasKey("ProductsId", "CategoriesId");
 					j.ToTable("ProductCategories");
-				}
-			);
+
+					j.HasIndex("ProductsId");
+					j.HasIndex("CategoriesId");
+				});
+
 
 		builder.HasMany(s => s.Pictures)
 			.WithOne(s => s.Product)
@@ -99,7 +119,7 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 			.WithOne(d => d.Product)
 			.HasForeignKey(d => d.ProductId)
 			.HasConstraintName("FK_Products_Details")
-			.OnDelete(DeleteBehavior.Cascade);
+			.OnDelete(DeleteBehavior.Restrict);
 
 		builder.HasOne(p => p.Supplier)
 			.WithMany(s => s.Products)

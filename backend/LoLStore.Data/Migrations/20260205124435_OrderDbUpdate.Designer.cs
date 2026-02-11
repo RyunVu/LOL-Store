@@ -4,6 +4,7 @@ using LoLStore.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoLStore.Data.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    partial class StoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260205124435_OrderDbUpdate")]
+    partial class OrderDbUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -106,12 +109,15 @@ namespace LoLStore.Data.Migrations
                     b.Property<int?>("MaxUses")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("MinimumOrderAmount")
+                    b.Property<decimal?>("MinimunOrderAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<int>("TimesUsed")
                         .ValueGeneratedOnAdd()
@@ -348,11 +354,6 @@ namespace LoLStore.Data.Migrations
                         .HasColumnType("decimal(5,2)")
                         .HasDefaultValue(0m);
 
-                    b.Property<decimal>("DiscountedPrice")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("decimal(18,2)")
-                        .HasComputedColumnSql("[Price] - ([Price] * [Discount] / 100.0)", true);
-
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -405,25 +406,13 @@ namespace LoLStore.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CountOrder");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("DiscountedPrice");
-
-                    b.HasIndex("Name");
-
                     b.HasIndex("Sku")
                         .IsUnique();
 
                     b.HasIndex("SupplierId");
 
-                    b.HasIndex("UpdatedAt");
-
                     b.HasIndex("UrlSlug")
                         .IsUnique();
-
-                    b.HasIndex("IsActive", "IsDeleted");
 
                     b.ToTable("Products", (string)null);
                 });
@@ -621,8 +610,6 @@ namespace LoLStore.Data.Migrations
 
                     b.HasIndex("CategoriesId");
 
-                    b.HasIndex("ProductsId");
-
                     b.ToTable("ProductCategories", (string)null);
                 });
 
@@ -668,8 +655,7 @@ namespace LoLStore.Data.Migrations
                 {
                     b.HasOne("LoLStore.Core.Entities.Discount", "Discount")
                         .WithMany("Orders")
-                        .HasForeignKey("DiscountId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("DiscountId");
 
                     b.HasOne("LoLStore.Core.Entities.User", "User")
                         .WithMany("Orders")
@@ -694,7 +680,7 @@ namespace LoLStore.Data.Migrations
                     b.HasOne("LoLStore.Core.Entities.Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_Products_Details");
 
@@ -765,13 +751,15 @@ namespace LoLStore.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CategoriesId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_ProductCategories_Categories");
 
                     b.HasOne("LoLStore.Core.Entities.Product", null)
                         .WithMany()
                         .HasForeignKey("ProductsId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_ProductCategories_Products");
                 });
 
             modelBuilder.Entity("RoleUser", b =>

@@ -13,7 +13,7 @@ public class Discount : BaseEntity
     public bool IsPercentage { get; set; }
     
     // Conditions
-    public decimal? MinimunOrderAmount { get; set; }
+    public decimal? MinimumOrderAmount { get; set; }
     public int? MaxUses { get; set; }
     public int TimesUsed { get; set; }
     

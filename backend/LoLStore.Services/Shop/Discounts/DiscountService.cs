@@ -30,7 +30,7 @@ public class DiscountService : IDiscountService
             IsActive = dto.IsActive,
             IsPercentage = dto.IsPercentage,
             DiscountValue = dto.DiscountValue,
-            MinimunOrderAmount = dto.MinimunOrderAmount,
+            MinimumOrderAmount = dto.MinimunOrderAmount,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             MaxUses = dto.MaxUses,
@@ -53,7 +53,7 @@ public class DiscountService : IDiscountService
         discount.IsActive = dto.IsActive;
         discount.IsPercentage = dto.IsPercentage;
         discount.DiscountValue = dto.DiscountValue;
-        discount.MinimunOrderAmount = dto.MinimunOrderAmount;
+        discount.MinimumOrderAmount = dto.MinimunOrderAmount;
         discount.StartDate = dto.StartDate;
         discount.EndDate = dto.EndDate;
         discount.MaxUses = dto.MaxUses;
@@ -132,8 +132,8 @@ public class DiscountService : IDiscountService
         if (discount.StartDate > now || discount.EndDate < now)
             return (DiscountApplyResult.Expired, null);
 
-        if (discount.MinimunOrderAmount.HasValue &&
-            orderTotal < discount.MinimunOrderAmount)
+        if (discount.MinimumOrderAmount.HasValue &&
+            orderTotal < discount.MinimumOrderAmount)
             return (DiscountApplyResult.MinimumNotMet, null);
 
         if (discount.MaxUses.HasValue &&

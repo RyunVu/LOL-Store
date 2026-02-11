@@ -53,7 +53,6 @@ public static class OrderSeeder
 
                 orders.Add(new Order
                 {
-                    Id = orderId,
                     UserId = user.Id,
                     OrderDate = orderDate,
                     CodeOrder = $"ORD-{orderDate.Year}-{random.Next(100000, 999999)}",
@@ -95,7 +94,7 @@ public static class OrderSeeder
                 d.IsActive &&
                 d.StartDate <= now &&
                 d.EndDate >= now &&
-                (d.MinimunOrderAmount == null || subTotal >= d.MinimunOrderAmount) &&
+                (d.MinimumOrderAmount == null || subTotal >= d.MinimumOrderAmount) &&
                 (d.MaxUses == null || d.TimesUsed < d.MaxUses)
             )
             .OrderBy(_ => Random.Shared.Next())
