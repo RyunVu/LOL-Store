@@ -10,6 +10,7 @@ using LoLStore.Services.Shop;
 using Microsoft.AspNetCore.Mvc;
 using MapsterMapper;
 using Mapster;
+using LoLStore.API.Models.OrderModel;
 
 namespace LoLStore.API.Endpoints;
 
@@ -30,6 +31,11 @@ public static class UserEndpoints
             .WithName("DeleteRefreshTokenAsync")
             .AllowAnonymous();
 
+        builder.MapGet("/{userId:guid}", GetUserById)
+            .WithName("GetUserById")
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<UserDto>>();
+
         builder.MapGet("/getUsers", GetUsers)
             .WithName("GetUsers")
             .RequireAuthorization("RequireAdminRole")
@@ -39,7 +45,22 @@ public static class UserEndpoints
             .WithName("GetRolesAsync")
             .RequireAuthorization("RequireAdminRole")
             .Produces<ApiResponse<IList<RoleDto>>>();
-        
+
+        builder.MapGet("/users/{userId:guid}/orders", GetOrdersByUser)
+            .WithName("GetOrdersByUser")
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<PaginationResult<OrderDto>>>();
+
+        builder.MapPut("/ban", BanUser)
+            .WithName("BanUser")
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<string>>();
+
+        builder.MapPut("/unban/{id:guid}", UnbanUser)
+            .WithName("UnbanUser")
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<string>>();
+
         // builder.MapGet("/getProfile", GetProfile)
         //     .WithName("GetProfile")
         //     .RequireAuthorization()
@@ -90,6 +111,15 @@ public static class UserEndpoints
         var user = mapper.Map<User>(model);
 
         var result = await repository.LoginAsync(user);
+
+        if (result.Status == LoginStatus.Banned)
+        {
+            var banMessage = result.BanStatus == BanStatus.Permanent
+                ? "Your account has been permanently banned."
+                : $"Your account is banned until {result.BannedUntil:yyyy-MM-dd HH:mm} UTC. Reason: {result.BanReason ?? "No reason provided."}";
+
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Forbidden, banMessage));
+        }
 
         if (result.Status != LoginStatus.Success || result.AuthenticatedUser == null)
         {
@@ -218,7 +248,7 @@ public static class UserEndpoints
     }
 
     private static async Task<IResult> GetUsers(
-        [AsParameters] UserFilterModel model,
+        [AsParameters] UserManagerFilterModel model,
         [FromServices] IUserRepository repository,
         [FromServices] IMapper mapper)
     {
@@ -227,7 +257,7 @@ public static class UserEndpoints
         var userList = await repository.GetPagedUsersAsync(
             userQuery,
             model,
-            p => p.ProjectToType<UserDto>());
+            p => p.ProjectToType<UserAdminDto>()); 
 
         return Results.Ok(ApiResponse.Success(userList));
     }
@@ -300,5 +330,67 @@ public static class UserEndpoints
         
         var userDto = mapper.Map<UserDto>(updatedUser);
         return Results.Ok(ApiResponse.Success(userDto));
+    }
+
+    private static async Task<IResult> BanUser(
+        [FromBody] BanUserModel model,
+        [FromServices] IUserRepository repository)
+    {
+        if (!model.IsPermanent && (model.DurationDays == null || model.DurationDays <= 0))
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "DurationDays must be a positive number for temporary bans."));
+
+        var result = await repository.BanUserAsync(
+            model.UserId,
+            model.IsPermanent,
+            model.DurationDays,
+            model.BanReason);
+
+        if (!result)
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+
+        return Results.Ok(ApiResponse.Success("User banned successfully."));
+    }
+
+    private static async Task<IResult> UnbanUser(
+        [FromRoute] Guid id,
+        [FromServices] IUserRepository repository)
+    {
+        var result = await repository.UnbanUserAsync(id);
+
+        if (!result)
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+
+        return Results.Ok(ApiResponse.Success("User unbanned successfully."));
+    }
+
+    private static async Task<IResult> GetUserById(
+        [FromRoute] Guid userId,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        var user = await repository.GetUserByIdAsync(userId, getFull: true);
+        if (user == null)
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+
+        var userDto = mapper.Map<UserDto>(user);
+        return Results.Ok(ApiResponse.Success(userDto));
+    }
+
+    private static async Task<IResult> GetOrdersByUser(
+        [FromRoute] Guid userId,
+        [AsParameters] PagingModel pagingParams,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        var user = await repository.GetUserByIdAsync(userId);
+        if (user == null)
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+
+        var orders = await repository.GetPagedOrdersByUserAsync(
+            userId,
+            pagingParams,
+            p => p.ProjectToType<OrderDto>());
+
+        return Results.Ok(ApiResponse.Success(new PaginationResult<OrderDto>(orders)));
     }
 }

@@ -34,6 +34,8 @@ public class AccountMap : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => u.Email)
             .IsUnique();
+		
+		builder.Ignore(u => u.IsBanned);
 
 		builder.HasMany(s => s.Roles)
 			.WithMany(s => s.Users)

@@ -46,6 +46,11 @@ const OrderPage = lazy(() => import('@/pages/admin/orders/OrderManagePage'))
 const OrderCreatePage = lazy(() => import('@/pages/admin/orders/OrderCreatePage'))
 const OrderEditPage = lazy(() => import('@/pages/admin/orders/OrderEditPage'))
 
+// Users
+const UserPage = lazy(() => import('@/pages/admin/users/UserManagePage'))
+const UserDetailPage = lazy(() => import('@/pages/admin/users/UserDetailPage'))
+const UserEditPage = lazy(() => import('@/pages/admin/users/UserEditPage'))
+
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -215,6 +220,32 @@ export const router = createBrowserRouter([
             element: (
               <SuspenseWrapper>
                 <OrderEditPage />
+              </SuspenseWrapper>
+            ),
+          },
+
+          // Users
+          {
+            path: 'users',
+            element: (
+              <SuspenseWrapper>
+                <UserPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'users/detail/:id',
+            element: (
+              <SuspenseWrapper>
+                <UserDetailPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'users/edit/:id',
+            element: (
+              <SuspenseWrapper>
+                <UserEditPage />
               </SuspenseWrapper>
             ),
           },

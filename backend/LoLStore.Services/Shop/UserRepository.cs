@@ -32,6 +32,15 @@ public class UserRepository : IUserRepository
         if (!_hasher.VerifyPassword(user.Password, userLogin.Password))
             return new LoginResult { Status = LoginStatus.InvalidPassword };
 
+        if (user.IsBanned)
+            return new LoginResult
+            {
+                Status = LoginStatus.Banned,
+                BanStatus = user.BanStatus,
+                BannedUntil = user.BannedUntil,
+                BanReason = user.BanReason
+            };
+
         return new LoginResult
         {
             Status = LoginStatus.Success,
@@ -85,9 +94,8 @@ public class UserRepository : IUserRepository
     {
         if (await _context.Users.AnyAsync(u => u.UserName == user.UserName, cancellationToken))
             return null;
-        user.Id = Guid.NewGuid();
         user.Name = user.Name ?? user.UserName;  
-        user.CreatedDate = DateTime.UtcNow;
+        user.CreatedAt = DateTime.UtcNow;
         user.Password = _hasher.HashPassword(user.Password);
 
         // Find default role
@@ -206,12 +214,17 @@ public class UserRepository : IUserRepository
         var keyword = query.Keyword?.Trim();
 
         return _context.Set<User>()
-            .AsNoTracking()
-            .WhereIf(!string.IsNullOrWhiteSpace(keyword), u =>
-                (u.Address ?? string.Empty).Contains(keyword!) ||
-                (u.Email ?? string.Empty).Contains(keyword!) ||
-                (u.Name ?? string.Empty).Contains(keyword!) ||
-                (u.UserName ?? string.Empty).Contains(keyword!));
+        .AsNoTracking()
+        .WhereIf(!string.IsNullOrWhiteSpace(keyword), u =>
+            (u.Address ?? string.Empty).Contains(keyword!) ||
+            (u.Email ?? string.Empty).Contains(keyword!) ||
+            (u.Name ?? string.Empty).Contains(keyword!) ||
+            (u.UserName ?? string.Empty).Contains(keyword!))
+        .WhereIf(query.IsDeleted.HasValue, u => u.IsDeleted == query.IsDeleted!.Value)
+        .WhereIf(query.IsBanned.HasValue, u =>
+            query.IsBanned!.Value
+                ? u.BanStatus != BanStatus.None
+                : u.BanStatus == BanStatus.None);
     }
 
     public async Task<User?> GetUserRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
@@ -228,5 +241,55 @@ public class UserRepository : IUserRepository
             .Include(s => s.RefreshTokens)
             .Include(s => s.Roles)
             .FirstOrDefaultAsync(s => s.Id == userLogin.UserId, cancellationToken);
+    }
+
+    public async Task<bool> BanUserAsync(Guid userId, bool isPermanent, int? durationDays, string? reason, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.Set<User>()
+        .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user == null) return false;
+
+        user.BanStatus = isPermanent ? BanStatus.Permanent : BanStatus.Temporary;
+        user.BannedUntil = isPermanent ? null : DateTime.UtcNow.AddDays(durationDays ?? 7);
+        user.BanReason = reason;
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> UnbanUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.Set<User>()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user == null) return false;
+
+        user.BanStatus = BanStatus.None;
+        user.BannedUntil = null;
+        user.BanReason = null;
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<IPagedList<T>> GetPagedOrdersByUserAsync<T>(
+        Guid userId,
+        IPagingParams pagingParams,
+        Func<IQueryable<Order>, IQueryable<T>> mapper,
+        CancellationToken cancellationToken = default)
+    {
+        var orders = _context.Set<Order>()
+            .AsNoTracking()
+            .Where(o => o.UserId == userId)
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                    .ThenInclude(p => p!.Pictures)
+            .Include(o => o.Discount)
+            .OrderByDescending(o => o.OrderDate);
+
+        var projected = mapper(orders);
+
+        return await projected.ToPagedListAsync(pagingParams, cancellationToken);
     }
 }

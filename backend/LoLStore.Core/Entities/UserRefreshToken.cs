@@ -23,5 +23,6 @@ public enum LoginStatus
 {
     Success = 0,
     InvalidUsername = 1,
-    InvalidPassword = 2
+    InvalidPassword = 2,
+    Banned = 3
 }

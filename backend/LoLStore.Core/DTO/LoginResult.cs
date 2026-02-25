@@ -7,4 +7,8 @@ public class LoginResult
     public LoginStatus Status { get; set; }
     public User? AuthenticatedUser { get; set; }
     public bool IsSuccess => Status == LoginStatus.Success;
+
+    public BanStatus BanStatus { get; set; }
+    public DateTime? BannedUntil { get; set; }
+    public string? BanReason { get; set; }
 }

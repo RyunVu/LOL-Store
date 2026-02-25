@@ -54,29 +54,44 @@ public class MapsterConfiguration : IRegister
             .Map(dest => dest.IsDeleted, src => src.IsDeleted)
             .Map(dest => dest.DateFilter, src => src.DateFilter);
 
-
+        // ===================================================================
+        // USER MAPPINGS 
+        // ===================================================================
         config.NewConfig<User, UserDto>()
+            .Map(dest => dest.IsBanned, src => src.IsBanned)
             .AfterMapping((src, dest) =>
+            {
+                if (src.Roles != null)
                 {
-                    if (src.Roles != null)
+                    dest.Roles = src.Roles.Select(r => new RoleDto
                     {
-                        dest.Roles = src.Roles.Select(r => new RoleDto
-                        {
-                            Id = r.Id,
-                            Name = r.Name
-                        }).ToList();
+                        Id = r.Id,
+                        Name = r.Name
+                    }).ToList();
 
-                        dest.PrimaryRole =
-                            src.Roles.Any(r => r.Name == "Admin") ? "Admin" :
-                            src.Roles.Any(r => r.Name == "Manager") ? "Manager" :
-                            "User";
-                    }
-                    else
-                    {
-                        dest.Roles = new List<RoleDto>();
-                        dest.PrimaryRole = "User";
-                    }
-                });
+                    dest.PrimaryRole =
+                        src.Roles.Any(r => r.Name == "Admin") ? "Admin" :
+                        src.Roles.Any(r => r.Name == "Manager") ? "Manager" :
+                        "User";
+                }
+                else
+                {
+                    dest.Roles = new List<RoleDto>();
+                    dest.PrimaryRole = "User";
+                }
+            });
+
+        config.NewConfig<User, UserAdminDto>()
+            .Inherits<User, UserDto>();
+
+
+        config.NewConfig<UserFilterModel, UserQuery>()
+            .Map(dest => dest.Keyword, src => src.Keyword);
+
+        config.NewConfig<UserManagerFilterModel, UserQuery>()
+            .Map(dest => dest.Keyword, src => src.Keyword)
+            .Map(dest => dest.IsBanned, src => src.IsBanned)
+            .Map(dest => dest.IsDeleted, src => src.IsDeleted);
 
         config.NewConfig<Supplier, SupplierDto>()
 			.Map(dest => dest.ProductCount,

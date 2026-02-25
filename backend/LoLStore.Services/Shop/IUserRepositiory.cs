@@ -33,4 +33,13 @@ public interface IUserRepository
         IPagingParams pagingParams,
         Func<IQueryable<User>, IQueryable<T>> mapper,
         CancellationToken cancellationToken = default);
+
+    Task<bool> BanUserAsync(Guid userId, bool isPermanent, int? durationDays, string? reason, CancellationToken cancellationToken = default);
+    Task<bool> UnbanUserAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    Task<IPagedList<T>> GetPagedOrdersByUserAsync<T>(
+        Guid userId,
+        IPagingParams pagingParams,
+        Func<IQueryable<Order>, IQueryable<T>> mapper,
+        CancellationToken cancellationToken = default);
 }
