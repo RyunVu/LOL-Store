@@ -12,6 +12,8 @@ import SuspenseWrapper from '@/components/common/SuspenseWrapper'
 // =====================
 const HomePage = lazy(() => import('@/pages/public/HomePage'))
 const ShopPage = lazy(() => import('@/pages/public/ShopPage'))
+const ProfilePage = lazy(() => import('@/pages/public/ProfilePage'))
+const CartPage = lazy(() => import('@/pages/public/CartPage'))
 
 // =====================
 // Auth pages
@@ -97,6 +99,24 @@ export const router = createBrowserRouter([
               <SuspenseWrapper>
                 <ProductDetailPage />
               </SuspenseWrapper>
+            ),
+          },
+          { 
+            path: 'profile', 
+            element: (
+              <SuspenseWrapper>
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              </SuspenseWrapper>
+            ), 
+          },
+          { 
+            path: 'cart', 
+            element: (
+              <SuspenseWrapper>
+                  <CartPage />
+              </SuspenseWrapper> 
             ),
           },
         ],

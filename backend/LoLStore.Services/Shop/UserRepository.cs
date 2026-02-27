@@ -90,6 +90,18 @@ public class UserRepository : IUserRepository
         return true;
     }
 
+    
+    public async Task<bool> ResetPasswordAsync(User user, string newPassword, CancellationToken cancellationToken = default)
+    {
+        if (user == null)
+            return false;
+        
+        user.Password = _hasher.HashPassword(newPassword);
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<User?> RegisterAsync(User user, CancellationToken cancellationToken = default)
     {
         if (await _context.Users.AnyAsync(u => u.UserName == user.UserName, cancellationToken))
@@ -291,5 +303,25 @@ public class UserRepository : IUserRepository
         var projected = mapper(orders);
 
         return await projected.ToPagedListAsync(pagingParams, cancellationToken);
+    }
+
+    public async Task<bool> UpdateUserAsync(
+        User user,
+        CancellationToken cancellationToken = default)
+    {
+        var existingUser = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == user.Id, cancellationToken);
+
+        if (existingUser == null)
+            return false;
+
+        existingUser.Name = user.Name;
+        existingUser.Email = user.Email;
+        existingUser.Phone = user.Phone;
+        existingUser.Address = user.Address;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return true;
     }
 }

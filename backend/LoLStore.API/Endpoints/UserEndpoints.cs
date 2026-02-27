@@ -61,10 +61,6 @@ public static class UserEndpoints
             .RequireAuthorization("RequireAdminRole")
             .Produces<ApiResponse<string>>();
 
-        // builder.MapGet("/getProfile", GetProfile)
-        //     .WithName("GetProfile")
-        //     .RequireAuthorization()
-        //     .Produces<ApiResponse<UserDto>>();
         # endregion
         
         # region Post Method
@@ -82,9 +78,20 @@ public static class UserEndpoints
         # endregion
         
         # region Put Method
+        builder.MapPut("/updateUser", UpdateUser)
+            .WithName("UpdateUser")
+            .AddEndpointFilter<ValidatorFilter<UserEditModel>>()
+            .Produces<ApiResponse<UserDto>>();
+
         builder.MapPut("/changePassword", ChangePassword)
             .WithName("ChangePassword")
             .AddEndpointFilter<ValidatorFilter<PasswordEditModel>>()
+            .Produces<ApiResponse<UserDto>>();
+
+        builder.MapPut("/users/{userId:guid}/resetPassword", ResetPassword)
+            .WithName("ResetPassword")
+            .RequireAuthorization("RequireAdminRole")
+            .AddEndpointFilter<ValidatorFilter<PasswordResetModel>>()
             .Produces<ApiResponse<UserDto>>();
 
         builder.MapPut("/updateUserRoles", UpdateUserRoles)
@@ -303,6 +310,26 @@ public static class UserEndpoints
         return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to change password. Old password may be incorrect."));
     }
 
+    private static async Task<IResult> ResetPassword(
+        [FromRoute] Guid userId,
+        [FromBody] PasswordResetModel model,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        var user = await repository.GetUserByIdAsync(userId);
+        if (user == null)        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+        }
+
+        if (await repository.ResetPasswordAsync(user, model.NewPassword))
+        {
+            var userDto = mapper.Map<UserDto>(user);
+            return Results.Ok(ApiResponse.Success(userDto));
+        }
+
+        return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to reset password."));
+    }
+
     private static async Task<IResult> UpdateUserRoles(
         [FromBody] UserRolesEditModel model,
         [FromServices] IUserRepository repository,
@@ -392,5 +419,34 @@ public static class UserEndpoints
             p => p.ProjectToType<OrderDto>());
 
         return Results.Ok(ApiResponse.Success(new PaginationResult<OrderDto>(orders)));
+    }
+
+    private static async Task<IResult> UpdateUser(
+        [FromBody] UserEditModel model,
+        HttpContext context,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        // Check for authenticated user
+        var identity = context.GetCurrentUser();
+        if (identity == null)
+        {
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "User not authenticated."));
+        }
+
+       var success = await repository.UpdateUserAsync(  
+           new User
+           {
+               Name = model.Name,
+               Email = model.Email,
+               Phone = model.Phone,
+               Address = model.Address
+           });
+           
+       if (!success)       {
+           return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to update user information."));
+       }
+
+       return Results.Ok(ApiResponse.Success("User information updated successfully."));
     }
 }

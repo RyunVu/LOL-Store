@@ -20,6 +20,11 @@ export const usersApi = {
     return data.result
   },
 
+  changePassword: async (userId, oldPassword, newPassword) => {
+    const { data } = await apiClient.put(`/account/users/${userId}/changePassword`, { oldPassword, newPassword })
+    return data.result
+  },
+
   // ─── Role Management ─────────────────────────────────────────────────────
   getRoles: async () => {
     const { data } = await apiClient.get('/account/roles')

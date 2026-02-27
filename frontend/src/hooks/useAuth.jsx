@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/store/authStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { authApi } from '@/api/auth.api'
 import { setAccessToken, clearAccessToken } from '@/api/client/token'
 

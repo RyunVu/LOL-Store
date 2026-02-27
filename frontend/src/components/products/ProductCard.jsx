@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useMemo } from 'react'
-import { useCartStore } from '@/store/cartStore'
+import { useCartStore } from '@/stores/useCartStore'
 
 export default function ProductCard({ product }) {
   const addItem = useCartStore((state) => state.addItem)

@@ -103,7 +103,6 @@ public class DataSeeder : IDataSeeder
             Phone = "N/A",
             UserName = "admin",
             Password = _hasher.HashPassword(adminPassword),
-            CreatedDate = DateTime.UtcNow,
             Roles = roles.ToList()
         };
 

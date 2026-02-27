@@ -3,9 +3,9 @@ using LoLStore.API.Models.UserModel;
 
 namespace LoLStore.API.Validations;
 
-public class PasswordValidator : AbstractValidator<PasswordEditModel>
+public class PasswordEditValidator : AbstractValidator<PasswordEditModel>
 {
-    public PasswordValidator()
+    public PasswordEditValidator()
     {
         RuleFor(s => s.OldPassword)
             .NotEmpty().WithMessage("Current password is required.");

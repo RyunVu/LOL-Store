@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { authApi } from '@/api/auth.api'
 import { setAccessToken } from '@/api/client/token'
-import { useAuthStore } from '@/store/authStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 export default function AuthBootstrap({ children }) {
   const setAuth = useAuthStore(s => s.setAuth)

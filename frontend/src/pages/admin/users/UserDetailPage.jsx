@@ -43,7 +43,6 @@ useEffect(() => {
     })
     .finally(() => setFetchLoading(false))
   
-    console.log('orders:', usersApi.getUserOrders(id, { pageSize: 10, pageNumber: 1 }));
     
   usersApi.getUserOrders(id, { pageSize: 10, pageNumber: 1 })
     .then((ordersData) => setOrders(ordersData?.items ?? []))

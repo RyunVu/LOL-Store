@@ -16,6 +16,8 @@ public interface IUserRepository
 
     Task<bool> ChangePasswordAsync(User user, string oldPassword, string newPassword, CancellationToken cancellationToken = default);
 
+    Task<bool> ResetPasswordAsync(User user, string newPassword, CancellationToken cancellationToken = default);
+
     Task<User?> RegisterAsync(User user, CancellationToken cancellationToken = default);
 
     Task<Role?> GetRoleByNameAsync(string role, CancellationToken cancellationToken = default);
@@ -42,4 +44,6 @@ public interface IUserRepository
         IPagingParams pagingParams,
         Func<IQueryable<Order>, IQueryable<T>> mapper,
         CancellationToken cancellationToken = default);
+
+    Task<bool> UpdateUserAsync(User user, CancellationToken cancellationToken = default);
 }
