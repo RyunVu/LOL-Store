@@ -5,7 +5,7 @@ using LoLStore.Data.Contexts;
 using LoLStore.Services.Extensions;
 using Microsoft.EntityFrameworkCore;
 
-namespace LoLStore.Services.Shop;
+namespace LoLStore.Services.Shop.Users;
 
 public class UserRepository : IUserRepository
 {
@@ -79,15 +79,16 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> ChangePasswordAsync(User user, string oldPassword, string newPassword, CancellationToken cancellationToken = default)
     {
-        if (user == null || !_hasher.VerifyPassword(user.Password, oldPassword))
+        var trackedUser = await _context.Users
+         .FirstOrDefaultAsync(u => u.Id == user.Id, cancellationToken);
+
+        if (trackedUser == null || !_hasher.VerifyPassword(trackedUser.Password, oldPassword))
             return false;
 
-        user.Password = _hasher.HashPassword(newPassword);
+        trackedUser.Password = _hasher.HashPassword(newPassword);
+        trackedUser.UpdatedAt = DateTime.UtcNow;
 
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return true;
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
     }
 
     
@@ -319,9 +320,33 @@ public class UserRepository : IUserRepository
         existingUser.Email = user.Email;
         existingUser.Phone = user.Phone;
         existingUser.Address = user.Address;
+        existingUser.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
+    }
 
-        return true;
+    public async Task<bool> ToggleDeleteUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _context.Set<User>()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user == null)
+            return false;
+
+        user.IsDeleted = !user.IsDeleted;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        if (user.IsDeleted)
+        {
+            user.DeletedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            user.DeletedAt = null;
+        }
+
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
     }
 }

@@ -3,121 +3,241 @@ using System.Net;
 using LoLStore.API.Filter;
 using LoLStore.API.Identities;
 using LoLStore.API.Models;
+using LoLStore.API.Models.OrderModel;
 using LoLStore.API.Models.UserModel;
+using LoLStore.Core.DTO.Users;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
-using LoLStore.Services.Shop;
-using Microsoft.AspNetCore.Mvc;
-using MapsterMapper;
+using LoLStore.Services.Shop.Users;
 using Mapster;
-using LoLStore.API.Models.OrderModel;
+using MapsterMapper;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LoLStore.API.Endpoints;
 
 public static class UserEndpoints
 {
-    public static WebApplication MapAccountEndpoints(
-        this WebApplication app)
+    public static WebApplication MapAccountEndpoints(this WebApplication app)
     {
         var builder = app.MapGroup("/api/account");
 
-        # region Get Method
+        #region GET
+
         builder.MapGet("/refreshToken", RefreshToken)
-            .WithName("RefreshToken")
             .AllowAnonymous()
             .Produces<ApiResponse<AccessTokenModel>>();
 
         builder.MapGet("/logout", Logout)
-            .WithName("DeleteRefreshTokenAsync")
             .AllowAnonymous();
 
         builder.MapGet("/{userId:guid}", GetUserById)
-            .WithName("GetUserById")
             .RequireAuthorization("RequireAdminRole")
             .Produces<ApiResponse<UserDto>>();
 
         builder.MapGet("/getUsers", GetUsers)
-            .WithName("GetUsers")
             .RequireAuthorization("RequireAdminRole")
-            .Produces<ApiResponse<PaginationResult<UserDto>>>();
+            .Produces<ApiResponse<PaginationResult<UserAdminDto>>>();
 
         builder.MapGet("/roles", GetRoles)
-            .WithName("GetRolesAsync")
             .RequireAuthorization("RequireAdminRole")
             .Produces<ApiResponse<IList<RoleDto>>>();
 
         builder.MapGet("/users/{userId:guid}/orders", GetOrdersByUser)
-            .WithName("GetOrdersByUser")
             .RequireAuthorization("RequireAdminRole")
             .Produces<ApiResponse<PaginationResult<OrderDto>>>();
 
-        builder.MapPut("/ban", BanUser)
-            .WithName("BanUser")
-            .RequireAuthorization("RequireAdminRole")
-            .Produces<ApiResponse<string>>();
+        #endregion
 
-        builder.MapPut("/unban/{id:guid}", UnbanUser)
-            .WithName("UnbanUser")
-            .RequireAuthorization("RequireAdminRole")
-            .Produces<ApiResponse<string>>();
-
-        # endregion
-        
-        # region Post Method
+        #region POST
 
         builder.MapPost("/login", Login)
-            .WithName("LoginAsync")
             .AllowAnonymous()
             .Produces<ApiResponse<AccessTokenModel>>();
 
         builder.MapPost("/register", Register)
-            .WithName("RegisterAsync")
             .AddEndpointFilter<ValidatorFilter<RegisterModel>>()
             .Produces<ApiResponse<UserDto>>();
 
-        # endregion
-        
-        # region Put Method
+        #endregion
+
+        #region PUT
+
         builder.MapPut("/updateUser", UpdateUser)
-            .WithName("UpdateUser")
             .AddEndpointFilter<ValidatorFilter<UserEditModel>>()
             .Produces<ApiResponse<UserDto>>();
 
         builder.MapPut("/changePassword", ChangePassword)
-            .WithName("ChangePassword")
             .AddEndpointFilter<ValidatorFilter<PasswordEditModel>>()
-            .Produces<ApiResponse<UserDto>>();
+            .Produces<ApiResponse<string>>();
 
         builder.MapPut("/users/{userId:guid}/resetPassword", ResetPassword)
-            .WithName("ResetPassword")
             .RequireAuthorization("RequireAdminRole")
             .AddEndpointFilter<ValidatorFilter<PasswordResetModel>>()
-            .Produces<ApiResponse<UserDto>>();
+            .Produces<ApiResponse<string>>();
 
         builder.MapPut("/updateUserRoles", UpdateUserRoles)
-            .WithName("UpdateUserRoles")
             .RequireAuthorization("RequireAdminRole")
             .Produces<ApiResponse<UserDto>>();
 
-        # endregion
+        builder.MapPut("/ban", BanUser)
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<string>>();
 
-        # region Delete Method
-        
-        # endregion
+        builder.MapPut("/unban/{id:guid}", UnbanUser)
+            .RequireAuthorization("RequireAdminRole")
+            .Produces<ApiResponse<string>>();
+
+        #endregion
+
+        #region DELETE
+
+        builder.MapDelete("/toggleDelete/{id:guid}", ToggleDeleteUser)
+            .RequireAuthorization("RequireAdminRole");
+
+        #endregion
 
         return app;
     }
 
+    #region GET METHODS
+
+    private static async Task<IResult> GetUserById(
+        [FromRoute] Guid userId,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
+    {
+        var user = await repository.GetUserByIdAsync(userId, getFull: true, ct);
+        if (user == null)
+            return Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+
+        return Results.Ok(ApiResponse.Success(mapper.Map<UserDto>(user)));
+    }
+
+    private static async Task<IResult> GetUsers(
+        [AsParameters] UserManagerFilterModel model,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
+    {
+        var query = mapper.Map<UserQuery>(model);
+
+        var users = await repository.GetPagedUsersAsync(
+            query,
+            model,
+            p => p.ProjectToType<UserAdminDto>(),
+            ct);
+
+        return Results.Ok(ApiResponse.Success(new PaginationResult<UserAdminDto>(users)));
+    }
+
+    private static async Task<IResult> GetRoles(
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
+    {
+        var roles = await repository.GetRolesAsync(ct);
+        return Results.Ok(ApiResponse.Success(mapper.Map<IList<RoleDto>>(roles)));
+    }
+
+    private static async Task<IResult> GetOrdersByUser(
+        [FromRoute] Guid userId,
+        [AsParameters] PagingModel pagingParams,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
+    {
+        var user = await repository.GetUserByIdAsync(userId, false, ct);
+        if (user == null)
+            return Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+
+        var orders = await repository.GetPagedOrdersByUserAsync(
+            userId,
+            pagingParams,
+            p => p.ProjectToType<OrderDto>(),
+            ct);
+
+        return Results.Ok(ApiResponse.Success(new PaginationResult<OrderDto>(orders)));
+    }
+
+    private static async Task<IResult> RefreshToken(
+        HttpContext context,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper,
+        [FromServices] IConfiguration configuration,
+        CancellationToken ct)
+    {
+        var refreshTokenString = context.Request.Cookies["refreshToken"];
+        if (string.IsNullOrWhiteSpace(refreshTokenString))
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token cookie is missing."));
+
+        var tokenEntity = await repository.GetRefreshTokenAsync(refreshTokenString, ct);
+        if (tokenEntity == null)
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token not found."));
+
+        if (tokenEntity.Expires <= DateTime.UtcNow)
+        {
+            await repository.DeleteRefreshTokenAsync(refreshTokenString, ct);
+            context.RemoveRefreshTokenCookie();
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token expired. Please login again."));
+        }
+
+        var user = await repository.GetUserByIdAsync(tokenEntity.UserId, getFull: true, ct);
+        if (user == null)
+        {
+            await repository.DeleteRefreshTokenAsync(refreshTokenString, ct);
+            context.RemoveRefreshTokenCookie();
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Associated user not found."));
+        }
+
+        var userDto = mapper.Map<UserDto>(user);
+        var jwt = userDto.GenerateJwt(configuration);
+
+        await repository.DeleteRefreshTokenAsync(refreshTokenString, ct);
+        var newToken = IdentityManager.GenerateRefreshToken(userDto.Id);
+        await repository.SetRefreshTokenAsync(userDto.Id, newToken, ct);
+        context.SetRefreshTokenCookie(newToken);
+
+        return Results.Ok(ApiResponse.Success(new AccessTokenModel
+        {
+            Token = new JwtSecurityTokenHandler().WriteToken(jwt),
+            TokenType = "bearer",
+            ExpiresToken = jwt.ValidTo,
+            UserDto = userDto
+        }));
+    }
+
+    private static async Task<IResult> Logout(
+        HttpContext context,
+        [FromServices] IUserRepository repository,
+        CancellationToken ct)
+    {
+        var refreshToken = context.Request.Cookies["refreshToken"];
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "No refresh token cookie found."));
+
+        var existing = await repository.GetRefreshTokenAsync(refreshToken, ct);
+        if (existing != null)
+            await repository.DeleteRefreshTokenAsync(refreshToken, ct);
+
+        context.RemoveRefreshTokenCookie();
+        return Results.Ok(ApiResponse.Success("Logged out successfully."));
+    }
+
+    #endregion
+
+    #region POST METHODS
+
     private static async Task<IResult> Login(
-    HttpContext context,
-    [FromBody] UserLoginModel model,
-    [FromServices] IUserRepository repository,
-    [FromServices] IMapper mapper,
-    [FromServices] IConfiguration configuration)
+        HttpContext context,
+        [FromBody] UserLoginModel model,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper,
+        [FromServices] IConfiguration configuration,
+        CancellationToken ct)
     {
         var user = mapper.Map<User>(model);
-
-        var result = await repository.LoginAsync(user);
+        var result = await repository.LoginAsync(user, ct);
 
         if (result.Status == LoginStatus.Banned)
         {
@@ -129,324 +249,219 @@ public static class UserEndpoints
         }
 
         if (result.Status != LoginStatus.Success || result.AuthenticatedUser == null)
-        {
             return Results.Ok(ApiResponse.Fail(
                 HttpStatusCode.Unauthorized,
-                IdentityManager.LoginResultMessage(result.Status)
-            ));
-        }
+                IdentityManager.LoginResultMessage(result.Status)));
 
         var userDto = mapper.Map<UserDto>(result.AuthenticatedUser);
-
         var token = userDto.GenerateJwt(configuration);
-
         var refreshToken = IdentityManager.GenerateRefreshToken(userDto.Id);
 
-        await repository.SetRefreshTokenAsync(userDto.Id, refreshToken);
-
+        await repository.SetRefreshTokenAsync(userDto.Id, refreshToken, ct);
         context.SetRefreshTokenCookie(refreshToken);
 
-        var accessToken = new AccessTokenModel
+        return Results.Ok(ApiResponse.Success(new AccessTokenModel
         {
             Token = new JwtSecurityTokenHandler().WriteToken(token),
             TokenType = "bearer",
             ExpiresToken = token.ValidTo,
             UserDto = userDto
-        };
-
-        return Results.Ok(ApiResponse.Success(accessToken));
-    }
-
-    private static async Task<IResult> RefreshToken(
-        HttpContext context,
-        [FromServices] IUserRepository repository,
-        [FromServices] IMapper mapper,
-        [FromServices] IConfiguration configuration)
-    {
-        var refreshTokenString = context.Request.Cookies["refreshToken"];
-        if (string.IsNullOrWhiteSpace(refreshTokenString))
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token cookie is missing."));
-
-        var tokenEntity = await repository.GetRefreshTokenAsync(refreshTokenString);
-        if (tokenEntity == null)
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token not found."));
-
-        if (tokenEntity.Expires <= DateTime.UtcNow)
-        {
-            // token expired: delete it from DB and force re-login
-            await repository.DeleteRefreshTokenAsync(refreshTokenString);
-            context.RemoveRefreshTokenCookie();
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token expired. Please login again."));
-        }
-
-        var user = await repository.GetUserByIdAsync(tokenEntity.UserId, getFull: true);
-        if (user == null)
-        {
-            await repository.DeleteRefreshTokenAsync(refreshTokenString);
-            context.RemoveRefreshTokenCookie();
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Associated user not found."));
-        }
-
-        var userDto = mapper.Map<UserDto>(user);
-        var jwt = userDto.GenerateJwt(configuration);
-
-        await repository.DeleteRefreshTokenAsync(refreshTokenString);
-
-        var newToken = IdentityManager.GenerateRefreshToken(userDto.Id);
-        await repository.SetRefreshTokenAsync(userDto.Id, newToken);
-
-        context.SetRefreshTokenCookie(newToken);
-
-        var accessToken = new AccessTokenModel
-        {
-            Token = new JwtSecurityTokenHandler().WriteToken(jwt),
-            TokenType = "bearer",
-            ExpiresToken = jwt.ValidTo,
-            UserDto = userDto
-        };
-
-        return Results.Ok(ApiResponse.Success(accessToken));
-    }
-
-    private static async Task<IResult> Logout(
-        HttpContext context,
-        [FromServices] IUserRepository repository)
-    {
-        var refreshToken = context.Request.Cookies["refreshToken"];
-        if (string.IsNullOrWhiteSpace(refreshToken))
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "No refresh token cookie found."));
-
-        var existing = await repository.GetRefreshTokenAsync(refreshToken);
-        if (existing != null)
-        {
-            await repository.DeleteRefreshTokenAsync(refreshToken);
-        }
-
-        context.RemoveRefreshTokenCookie();
-
-        return Results.Ok(ApiResponse.Success("Logged out (refresh token deleted)."));
+        }));
     }
 
     private static async Task<IResult> Register(
         [FromBody] RegisterModel model,
+        [FromServices] IUserService service,
         [FromServices] IUserRepository repository,
-        [FromServices] IConfiguration configuration,
-        [FromServices] IMapper mapper)
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
     {
-        // Check username BEFORE mapping to entity
-        var userExist = await repository.IsUserExistedAsync(model.UserName);
-        if (userExist)
+        try
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Account already exists."));
+            var dto = mapper.Map<CreateUserDto>(model);
+            var newUser = await service.RegisterAsync(dto, ct);
+
+            if (newUser == null)
+                return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to create user."));
+
+            // Re-fetch with roles for full DTO
+            var fullUser = await repository.GetUserByIdAsync(newUser.Id, getFull: true, ct);
+            if (fullUser == null)
+                return Results.Ok(ApiResponse.Fail(HttpStatusCode.InternalServerError, 
+                    "User created but failed to retrieve full details."));
+
+            return Results.Ok(ApiResponse.Success(mapper.Map<UserDto>(fullUser)));
         }
-
-        // Now map to entity after verifying
-        var user = mapper.Map<User>(model);
-
-        // Create user
-        var newUser = await repository.RegisterAsync(user);
-        if (newUser == null)
+        catch (InvalidOperationException ex)
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to create user."));
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
         }
-
-        var userDto = mapper.Map<UserDto>(newUser);
-        return Results.Ok(ApiResponse.Success(userDto));
     }
 
-    private static async Task<IResult> GetUsers(
-        [AsParameters] UserManagerFilterModel model,
+    #endregion
+
+    #region PUT METHODS
+
+    private static async Task<IResult> UpdateUser(
+        [FromBody] UserEditModel model,
+        HttpContext context,
+        [FromServices] IUserService service,
         [FromServices] IUserRepository repository,
-        [FromServices] IMapper mapper)
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
     {
-        var userQuery = mapper.Map<UserQuery>(model);
+        var identity = context.GetCurrentUser();
+        if (identity == null)
+            return Results.Unauthorized();
 
-        var userList = await repository.GetPagedUsersAsync(
-            userQuery,
-            model,
-            p => p.ProjectToType<UserAdminDto>()); 
+        try
+        {
+            var dto = mapper.Map<UpdateUserDto>((identity.Id, model));
+            var success = await service.UpdateAsync(dto, ct);
 
-        return Results.Ok(ApiResponse.Success(userList));
-    }
+            if (!success)
+                return Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
 
-    private static async Task<IResult> GetRoles(
-        [FromServices] IUserRepository userRepository,
-        [FromServices] IMapper mapper)
-    {
-        var roles = await userRepository.GetRolesAsync();
-        var listRoles = mapper.Map<IList<RoleDto>>(roles);
+            // Re-fetch for updated response
+            var user = await repository.GetUserByIdAsync(identity.Id, getFull: true, ct);
+            if (user == null)
+                return Results.Ok(ApiResponse.Fail(HttpStatusCode.InternalServerError, 
+                    "User updated but failed to retrieve full details."));
 
-        return Results.Ok(ApiResponse.Success(listRoles));
+            return Results.Ok(ApiResponse.Success(mapper.Map<UserDto>(user)));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
+        }
     }
 
     private static async Task<IResult> ChangePassword(
         [FromBody] PasswordEditModel model,
         HttpContext context,
-        [FromServices] IUserRepository repository,
-        [FromServices] IMapper mapper)
+        [FromServices] IUserService service,
+        CancellationToken ct)
     {
-        // Check for authenticated user
         var identity = context.GetCurrentUser();
         if (identity == null)
-        {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "User not authenticated.")
-            );
-        }
+            return Results.Unauthorized();
 
-        // Get user from database
-        var user = await repository.GetUserByIdAsync(identity.Id);
-        if (user == null)
+        try
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
-        }
+            var success = await service.ChangePasswordAsync(
+                identity.Id, model.OldPassword, model.NewPassword, ct);
 
-        // Change password
-        if (await repository.ChangePasswordAsync(user, model.OldPassword, model.NewPassword))
+            return success
+                ? Results.Ok(ApiResponse.Success("Password changed successfully."))
+                : Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Old password is incorrect."));
+        }
+        catch (InvalidOperationException ex)
         {
-            var userDto = mapper.Map<UserDto>(user);
-            return Results.Ok(ApiResponse.Success(userDto));
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
         }
-
-        return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to change password. Old password may be incorrect."));
     }
 
     private static async Task<IResult> ResetPassword(
         [FromRoute] Guid userId,
         [FromBody] PasswordResetModel model,
-        [FromServices] IUserRepository repository,
-        [FromServices] IMapper mapper)
+        [FromServices] IUserService service,
+        CancellationToken ct)
     {
-        var user = await repository.GetUserByIdAsync(userId);
-        if (user == null)        {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
-        }
-
-        if (await repository.ResetPasswordAsync(user, model.NewPassword))
+        try
         {
-            var userDto = mapper.Map<UserDto>(user);
-            return Results.Ok(ApiResponse.Success(userDto));
-        }
+            var success = await service.ResetPasswordAsync(userId, model.NewPassword, ct);
 
-        return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to reset password."));
+            return success
+                ? Results.Ok(ApiResponse.Success("Password reset successfully."))
+                : Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
+        }
     }
 
     private static async Task<IResult> UpdateUserRoles(
         [FromBody] UserRolesEditModel model,
+        [FromServices] IUserService service,
         [FromServices] IUserRepository repository,
-        [FromServices] IConfiguration configuration,
-        [FromServices] IMapper mapper)
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
     {
-        var user = await repository.GetUserByIdAsync(model.UserId, getFull: true);
-        if (user == null)
+        try
         {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.NotFound,
-                "User not found."
-            ));
+            var success = await service.UpdateRolesAsync(model.UserId, model.RolesId, ct);
+
+            if (!success)
+                return Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+
+            var user = await repository.GetUserByIdAsync(model.UserId, getFull: true, ct);
+            if (user == null)
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.InternalServerError, 
+                "User updated but failed to retrieve full details."));
+                
+            return Results.Ok(ApiResponse.Success(mapper.Map<UserDto>(user)));
         }
-
-        var updatedUser = await repository.UpdateUserRolesAsync(user.Id, model.RolesId);
-
-        if (updatedUser == null)
+        catch (InvalidOperationException ex)
         {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.BadRequest,
-                "Failed to update user roles."
-            ));
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
         }
-        
-        var userDto = mapper.Map<UserDto>(updatedUser);
-        return Results.Ok(ApiResponse.Success(userDto));
     }
 
     private static async Task<IResult> BanUser(
         [FromBody] BanUserModel model,
-        [FromServices] IUserRepository repository)
+        [FromServices] IUserService service,
+        CancellationToken ct)
     {
-        if (!model.IsPermanent && (model.DurationDays == null || model.DurationDays <= 0))
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "DurationDays must be a positive number for temporary bans."));
+        try
+        {
+            var success = await service.BanAsync(
+                model.UserId, model.IsPermanent, model.DurationDays, model.BanReason, ct);
 
-        var result = await repository.BanUserAsync(
-            model.UserId,
-            model.IsPermanent,
-            model.DurationDays,
-            model.BanReason);
-
-        if (!result)
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
-
-        return Results.Ok(ApiResponse.Success("User banned successfully."));
+            return success
+                ? Results.Ok(ApiResponse.Success("User banned successfully."))
+                : Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
+        }
     }
 
     private static async Task<IResult> UnbanUser(
         [FromRoute] Guid id,
-        [FromServices] IUserRepository repository)
+        [FromServices] IUserService service,
+        CancellationToken ct)
     {
-        var result = await repository.UnbanUserAsync(id);
-
-        if (!result)
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
-
-        return Results.Ok(ApiResponse.Success("User unbanned successfully."));
-    }
-
-    private static async Task<IResult> GetUserById(
-        [FromRoute] Guid userId,
-        [FromServices] IUserRepository repository,
-        [FromServices] IMapper mapper)
-    {
-        var user = await repository.GetUserByIdAsync(userId, getFull: true);
-        if (user == null)
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
-
-        var userDto = mapper.Map<UserDto>(user);
-        return Results.Ok(ApiResponse.Success(userDto));
-    }
-
-    private static async Task<IResult> GetOrdersByUser(
-        [FromRoute] Guid userId,
-        [AsParameters] PagingModel pagingParams,
-        [FromServices] IUserRepository repository,
-        [FromServices] IMapper mapper)
-    {
-        var user = await repository.GetUserByIdAsync(userId);
-        if (user == null)
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
-
-        var orders = await repository.GetPagedOrdersByUserAsync(
-            userId,
-            pagingParams,
-            p => p.ProjectToType<OrderDto>());
-
-        return Results.Ok(ApiResponse.Success(new PaginationResult<OrderDto>(orders)));
-    }
-
-    private static async Task<IResult> UpdateUser(
-        [FromBody] UserEditModel model,
-        HttpContext context,
-        [FromServices] IUserRepository repository,
-        [FromServices] IMapper mapper)
-    {
-        // Check for authenticated user
-        var identity = context.GetCurrentUser();
-        if (identity == null)
+        try
         {
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "User not authenticated."));
+            var success = await service.UnbanAsync(id, ct);
+
+            return success
+                ? Results.Ok(ApiResponse.Success("User unbanned successfully."))
+                : Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
         }
-
-       var success = await repository.UpdateUserAsync(  
-           new User
-           {
-               Name = model.Name,
-               Email = model.Email,
-               Phone = model.Phone,
-               Address = model.Address
-           });
-           
-       if (!success)       {
-           return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "Failed to update user information."));
-       }
-
-       return Results.Ok(ApiResponse.Success("User information updated successfully."));
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
+        }
     }
+
+    #endregion
+
+    #region DELETE METHODS
+
+    private static async Task<IResult> ToggleDeleteUser(
+        [FromRoute] Guid id,
+        [FromServices] IUserService service,
+        CancellationToken ct)
+    {
+        var success = await service.ToggleSoftDeleteAsync(id, ct);
+
+        return success
+            ? Results.NoContent()
+            : Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+    }
+
+    #endregion
 }

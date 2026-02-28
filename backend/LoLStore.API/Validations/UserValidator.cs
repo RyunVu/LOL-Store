@@ -18,7 +18,8 @@ public class UserValidator : AbstractValidator<UserEditModel>
         RuleFor(u => u.Phone)
             .NotEmpty().WithMessage("Phone number is required.")
             .Matches(@"^(0|\+84)(3|5|7|8|9)\d{8}$")
-            .WithMessage("Phone number must be a valid Vietnam mobile number.");
+            .WithMessage("Phone number must be a valid Vietnam mobile number.")
+            .When(u => !string.IsNullOrEmpty(u.Phone));
 
         RuleFor(u => u.Address)
             .MaximumLength(512).WithMessage("Address cannot exceed 512 characters.");

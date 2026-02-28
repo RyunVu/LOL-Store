@@ -58,8 +58,8 @@ export default function UserManagePage() {
       })
       const res = await usersApi.getUsersByManager(params)
       
-      setUsers(res ?? [])
-      setTotalItems(res?.length ?? 0)
+      setUsers(res?.items ?? [])
+      setTotalItems(res?.totalItems ?? 0)
       
       setSelectedUsers([])
     } catch (err) {

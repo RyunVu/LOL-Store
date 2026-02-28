@@ -12,6 +12,7 @@ using LoLStore.Core.DTO.Categories;
 using LoLStore.Core.DTO.Discounts;
 using LoLStore.Core.DTO.Orders;
 using LoLStore.Core.DTO.Products;
+using LoLStore.Core.DTO.Users;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 using LoLStore.WebAPI.Models.DiscountModel;
@@ -84,14 +85,27 @@ public class MapsterConfiguration : IRegister
         config.NewConfig<User, UserAdminDto>()
             .Inherits<User, UserDto>();
 
+        config.NewConfig<RegisterModel, CreateUserDto>();
 
-        config.NewConfig<UserFilterModel, UserQuery>()
-            .Map(dest => dest.Keyword, src => src.Keyword);
+        config.NewConfig<(Guid Id, UserEditModel Model), UpdateUserDto>()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest, src => src.Model);
 
-        config.NewConfig<UserManagerFilterModel, UserQuery>()
-            .Map(dest => dest.Keyword, src => src.Keyword)
-            .Map(dest => dest.IsBanned, src => src.IsBanned)
-            .Map(dest => dest.IsDeleted, src => src.IsDeleted);
+        config.NewConfig<UserFilterModel, UserQuery>();
+
+        config.NewConfig<UserManagerFilterModel, UserQuery>();
+
+        config.NewConfig<UserEditModel, User>()
+            .Ignore(dest => dest.Roles)
+            .Ignore(dest => dest.RefreshTokens)
+            .Ignore(dest => dest.Orders)
+            .Ignore(dest => dest.ProductHistories)
+            .Ignore(dest => dest.Password)
+            .Ignore(dest => dest.UserName);
+
+        // ===================================================================
+        // SUPPLIER MAPPINGS
+        // ===================================================================
 
         config.NewConfig<Supplier, SupplierDto>()
 			.Map(dest => dest.ProductCount,

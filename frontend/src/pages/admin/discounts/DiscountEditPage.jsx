@@ -14,6 +14,8 @@ export default function DiscountEditPage() {
 
   useEffect(() => {
     setFetchLoading(true)
+    console.log(discountsApi.getDiscountById(id));
+    
     discountsApi
       .getDiscountById(id)
       .then((data) => {
@@ -32,9 +34,7 @@ export default function DiscountEditPage() {
   const handleUpdate = async (formData) => {
     setLoading(true)
     try {
-      await discountsApi.updateOrder(id, formData)
-      console.log(formData);
-      
+      await discountsApi.updateDiscount(id, formData)    
       navigate('/admin/discounts')
     } catch (error) {
       console.error('Failed to update discount:', error)

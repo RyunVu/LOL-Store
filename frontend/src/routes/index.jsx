@@ -12,8 +12,8 @@ import SuspenseWrapper from '@/components/common/SuspenseWrapper'
 // =====================
 const HomePage = lazy(() => import('@/pages/public/HomePage'))
 const ShopPage = lazy(() => import('@/pages/public/ShopPage'))
-const ProfilePage = lazy(() => import('@/pages/public/ProfilePage'))
-const CartPage = lazy(() => import('@/pages/public/CartPage'))
+const ProfilePage = lazy(() => import('@/pages/public/profile/ProfilePage'))
+const CartPage = lazy(() => import('@/pages/public/cart/CartPage'))
 
 // =====================
 // Auth pages

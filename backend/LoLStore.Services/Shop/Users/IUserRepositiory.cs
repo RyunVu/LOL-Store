@@ -2,7 +2,7 @@ using LoLStore.Core.DTO;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 
-namespace LoLStore.Services.Shop;
+namespace LoLStore.Services.Shop.Users;
 
 public interface IUserRepository
 {
@@ -46,4 +46,5 @@ public interface IUserRepository
         CancellationToken cancellationToken = default);
 
     Task<bool> UpdateUserAsync(User user, CancellationToken cancellationToken = default);
+    Task<bool> ToggleDeleteUserAsync(Guid userId, CancellationToken cancellationToken = default);
 }

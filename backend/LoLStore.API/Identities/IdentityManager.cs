@@ -5,7 +5,7 @@ using System.Text;
 using LoLStore.API.Models.UserModel;
 using LoLStore.Core.DTO;
 using LoLStore.Core.Entities;
-using LoLStore.Services.Shop;
+using LoLStore.Services.Shop.Users;
 using Microsoft.IdentityModel.Tokens;
 namespace LoLStore.API.Identities;
 

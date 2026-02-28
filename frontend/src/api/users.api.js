@@ -13,15 +13,21 @@ export const usersApi = {
     return data.result
   },
 
-  // ─── Edit ─────────────────────────────────────────────────────────────────
+  // ─── Edit ────────────────────────────────────────────────────────────────
+  // userId is read from JWT on backend — only send the body fields
   updateUser: async (userId, userData) => {
     if (!userId) throw new Error('User id is required')
-    const { data } = await apiClient.put(`/account/users/${userId}`, userData)
+    const { data } = await apiClient.put('/account/updateUser', userData)
     return data.result
   },
 
-  changePassword: async (userId, oldPassword, newPassword) => {
-    const { data } = await apiClient.put(`/account/users/${userId}/changePassword`, { oldPassword, newPassword })
+  // userId is read from JWT on backend — no userId in URL or body
+  changePassword: async (oldPassword, newPassword) => {
+    const { data } = await apiClient.put('/account/changePassword', {
+      oldPassword,
+      newPassword,
+      confirmPassword: newPassword,
+    })
     return data.result
   },
 
@@ -44,7 +50,7 @@ export const usersApi = {
       userId,
       isPermanent,
       durationDays,
-      banReason: reason,   
+      banReason: reason,
     })
     return data.result
   },
@@ -61,12 +67,6 @@ export const usersApi = {
     return data.result
   },
 
-  forceLogout: async (userId) => {
-    if (!userId) throw new Error('User id is required')
-    const { data } = await apiClient.delete(`/account/users/${userId}/sessions`)
-    return data.result
-  },
-
   // ─── Activity ────────────────────────────────────────────────────────────
   getUserOrders: async (userId, params = {}) => {
     if (!userId) throw new Error('User id is required')
@@ -74,10 +74,10 @@ export const usersApi = {
     return data.result
   },
 
-  // ─── Delete ───────────────────────────────────────────────────────────────
-  softDeleteUser: async (userId) => {
+  // ─── Delete ──────────────────────────────────────────────────────────────
+  toggleDeleteUser: async (userId) => {
     if (!userId) throw new Error('User id is required')
-    const { data } = await apiClient.delete(`/account/users/${userId}/soft`)
+    const { data } = await apiClient.delete(`/account/toggleDelete/${userId}`)
     return data.result
   },
 }
