@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { useAuthStore } from '@/store/authStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 export default function ProtectedRoute({ children, requireAdmin = false }) {
   const { isAuthenticated, isInitializing, user } = useAuthStore()

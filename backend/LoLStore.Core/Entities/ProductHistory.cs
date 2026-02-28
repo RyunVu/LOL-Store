@@ -12,7 +12,7 @@ public enum ProductHistoryAction
 }
 
 public class ProductHistory : IEntity
-{
+{    
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
     public Guid UserId { get; set; }

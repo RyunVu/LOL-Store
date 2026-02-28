@@ -8,6 +8,9 @@ export default function CategoryManagePage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
+  //  Selection state
+  const [selectedCategories, setSelectedCategories] = useState([])
+
   const [deleteModal, setDeleteModal] = useState({
     show: false,
     category: null,
@@ -57,9 +60,11 @@ export default function CategoryManagePage() {
       })
 
       const res = await categoriesApi.getCategoriesByManager(params)
-
+      
       setCategories(res?.items ?? [])
-      setTotalItems(res?.totalItems ?? 0)
+      setTotalItems(res?.totalItemCount ?? 0)
+      // Clear selections when categories change
+      setSelectedCategories([])
     } catch (error) {
       console.error('Failed to fetch categories:', error)
       setCategories([])
@@ -72,36 +77,157 @@ export default function CategoryManagePage() {
     fetchCategories()
   }, [fetchCategories])
 
-  const handleDelete = async () => {
-    if (!deleteModal.category) return
-
-    try {
-      if (deleteModal.isPermanent) {
-        // Permanent delete - endpoint: DELETE /api/categories/{id}
-        await categoriesApi.deleteCategoryPermanently(deleteModal.category.id)
-      } else {
-        // Soft delete toggle - endpoint: DELETE /api/categories/SoftDeleteToggle/{id}
-        await categoriesApi.toggleSoftDeleteCategory(deleteModal.category.id)
-      }
-      setDeleteModal({ show: false, category: null, isPermanent: false })
-      fetchCategories()
-    } catch (error) {
-      console.error('Delete failed:', error)
-      alert('Failed to delete category')
+  //  Selection handlers
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedCategories(categories.map((c) => c.id))
+    } else {
+      setSelectedCategories([])
     }
   }
 
-  const handleRestore = async () => {
-    if (!restoreModal.category) return
+  const handleSelectCategory = (categoryId) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId]
+    )
+  }
+
+  //  Check if all selected categories are deleted
+  const allSelectedAreDeleted = () => {
+    if (selectedCategories.length === 0) return false
+    return selectedCategories.every((id) => {
+      const category = categories.find((c) => c.id === id)
+      return category?.isDeleted
+    })
+  }
+
+  //  Check if any selected categories are not deleted
+  const anySelectedNotDeleted = () => {
+    return selectedCategories.some((id) => {
+      const category = categories.find((c) => c.id === id)
+      return !category?.isDeleted
+    })
+  }
+
+  //  Check if all selected are active
+  const allSelectedAreActive = () => {
+    if (selectedCategories.length === 0) return false
+    return selectedCategories.every((id) => {
+      const category = categories.find((c) => c.id === id)
+      return category?.isActive
+    })
+  }
+
+  //  Check if all selected are inactive
+  const allSelectedAreInactive = () => {
+    if (selectedCategories.length === 0) return false
+    return selectedCategories.every((id) => {
+      const category = categories.find((c) => c.id === id)
+      return !category?.isActive
+    })
+  }
+
+  //  Bulk toggle active status
+  const handleBulkToggleActive = async (setActive) => {
+    try {
+      // Only toggle categories that need to change
+      const categoriesToToggle = selectedCategories.filter((categoryId) => {
+        const category = categories.find((c) => c.id === categoryId)
+        return category?.isActive !== setActive
+      })
+
+      if (categoriesToToggle.length === 0) {
+        alert('All selected categories are already in the desired state')
+        return
+      }
+
+      const togglePromises = categoriesToToggle.map((categoryId) => {
+        return categoriesApi.toggleActive(categoryId, setActive)
+      })
+      await Promise.all(togglePromises)
+      setSelectedCategories([])
+      fetchCategories()
+    } catch (error) {
+      console.error('Toggle active failed:', error)
+      alert('Failed to update category status')
+    }
+  }
+
+  //  Bulk delete handler
+  const handleBulkDelete = () => {
+    const isPermanent = allSelectedAreDeleted()
+    setDeleteModal({
+      show: true,
+      category: null,
+      isPermanent,
+      isMultiple: true,
+    })
+  }
+
+  //  Bulk restore handler
+  const handleBulkRestore = () => {
+    setRestoreModal({
+      show: true,
+      category: null,
+      isMultiple: true,
+    })
+  }
+
+  // Delete category (single or multiple)
+  const handleDelete = async () => {
+    if (!deleteModal.category && !deleteModal.isMultiple) return
 
     try {
-      // Toggle soft delete (will restore if deleted)
-      await categoriesApi.toggleSoftDeleteCategory(restoreModal.category.id)
-      setRestoreModal({ show: false, category: null })
+      if (deleteModal.isMultiple) {
+        // Bulk delete
+        const deletePromises = selectedCategories.map((categoryId) => {
+          if (deleteModal.isPermanent) {
+            return categoriesApi.deleteCategoryPermanently(categoryId)
+          } else {
+            return categoriesApi.toggleSoftDeleteCategory(categoryId)
+          }
+        })
+        await Promise.all(deletePromises)
+        setSelectedCategories([])
+      } else {
+        // Single delete
+        if (deleteModal.isPermanent) {
+          await categoriesApi.deleteCategoryPermanently(deleteModal.category.id)
+        } else {
+          await categoriesApi.toggleSoftDeleteCategory(deleteModal.category.id)
+        }
+      }
+      setDeleteModal({ show: false, category: null, isPermanent: false, isMultiple: false })
+      fetchCategories()
+    } catch (error) {
+      console.error('Delete failed:', error)
+      alert('Failed to delete category/categories')
+    }
+  }
+
+  // Restore category (single or multiple)
+  const handleRestore = async () => {
+    if (!restoreModal.category && !restoreModal.isMultiple) return
+
+    try {
+      if (restoreModal.isMultiple) {
+        // Bulk restore
+        const restorePromises = selectedCategories.map((categoryId) => {
+          return categoriesApi.toggleSoftDeleteCategory(categoryId)
+        })
+        await Promise.all(restorePromises)
+        setSelectedCategories([])
+      } else {
+        // Single restore
+        await categoriesApi.toggleSoftDeleteCategory(restoreModal.category.id)
+      }
+      setRestoreModal({ show: false, category: null, isMultiple: false })
       fetchCategories()
     } catch (error) {
       console.error('Restore failed:', error)
-      alert('Failed to restore category')
+      alert('Failed to restore category/categories')
     }
   }
 
@@ -136,112 +262,193 @@ export default function CategoryManagePage() {
       {/* Filters */}
       <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 mb-6 shadow-lg">
         <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold text-white">Category List</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Category List</h2>
+          </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search */}
-            <input
-              type="text"
-              placeholder="Search category..."
-              className="w-64 bg-gray-900 border border-gray-700 text-sm text-white placeholder-gray-500 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
-              value={filters.keyword}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  keyword: e.target.value,
-                  pageNumber: 1,
-                }))
-              }
-            />
-
-            {/* Active Status Filter */}
-            <select
-              className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 transition-shadow"
-              value={filters.isActive}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  isActive: e.target.value,
-                  pageNumber: 1,
-                }))
-              }
-            >
-              <option value="">All Active Status</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
-            </select>
-
-            {/* Deleted Status Filter */}
-            <select
-              className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 transition-shadow"
-              value={filters.isDeleted}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  isDeleted: e.target.value,
-                  pageNumber: 1,
-                }))
-              }
-            >
-              <option value="">All Delete Status</option>
-              <option value="false">Not Deleted</option>
-              <option value="true">Deleted</option>
-            </select>
-
-            {/* Date Filter Type */}
-            <select
-              className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 transition-shadow"
-              value={filters.dateFilter}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  dateFilter: e.target.value,
-                  sortOrder: 'Desc',
-                  pageNumber: 1,
-                }))
-              }
-            >
-              <option value="">Filter by Date</option>
-              <option value="Created">Created Date</option>
-              <option value="Updated">Updated Date</option>
-              <option value="Deleted">Deleted Date</option>
-            </select>
-
-            {/* Date Sort Order - Only show when date filter is selected */}
-            {filters.dateFilter && (
-              <select
-                className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 transition-shadow"
-                value={filters.sortOrder}
+          <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+              {/* Search */}
+              <input
+                type="text"
+                placeholder="Search category..."
+                className="w-64 bg-gray-900 border border-gray-700 text-sm text-white placeholder-gray-500 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
+                value={filters.keyword}
                 onChange={(e) =>
                   setFilters((prev) => ({
                     ...prev,
-                    sortOrder: e.target.value,
+                    keyword: e.target.value,
+                    pageNumber: 1,
+                  }))
+                }
+              />
+
+              {/* Active Status Filter */}
+              <select
+                className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 transition-shadow"
+                value={filters.isActive}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    isActive: e.target.value,
                     pageNumber: 1,
                   }))
                 }
               >
-                <option value="Desc">Newest First</option>
-                <option value="Asc">Oldest First</option>
+                <option value="">All Active Status</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
               </select>
-            )}
 
-            {/* Clear Filters */}
-            <button
-              onClick={() =>
-                setFilters((prev) => ({
-                  keyword: '',
-                  isActive: '',
-                  isDeleted: '',
-                  dateFilter: '',
-                  sortOrder: '',
-                  pageNumber: 1,
-                  pageSize: prev.pageSize,
-                }))
-              }
-              className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              Clear
-            </button>
+              {/* Deleted Status Filter */}
+              <select
+                className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 transition-shadow"
+                value={filters.isDeleted}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    isDeleted: e.target.value,
+                    pageNumber: 1,
+                  }))
+                }
+              >
+                <option value="">All Delete Status</option>
+                <option value="false">Not Deleted</option>
+                <option value="true">Deleted</option>
+              </select>
+
+              {/* Date Filter Type */}
+              <select
+                className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 transition-shadow"
+                value={filters.dateFilter}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    dateFilter: e.target.value,
+                    sortOrder: 'Desc',
+                    pageNumber: 1,
+                  }))
+                }
+              >
+                <option value="">Filter by Date</option>
+                <option value="Created">Created Date</option>
+                <option value="Updated">Updated Date</option>
+                <option value="Deleted">Deleted Date</option>
+              </select>
+
+              {/* Date Sort Order - Only show when date filter is selected */}
+              {filters.dateFilter && (
+                <select
+                  className="bg-gray-900 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 transition-shadow"
+                  value={filters.sortOrder}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      sortOrder: e.target.value,
+                      pageNumber: 1,
+                    }))
+                  }
+                >
+                  <option value="Desc">Newest First</option>
+                  <option value="Asc">Oldest First</option>
+                </select>
+              )}
+
+              {/* Clear Filters */}
+              <button
+                onClick={() =>
+                  setFilters((prev) => ({
+                    keyword: '',
+                    isActive: '',
+                    isDeleted: '',
+                    dateFilter: '',
+                    sortOrder: '',
+                    pageNumber: 1,
+                    pageSize: prev.pageSize,
+                  }))
+                }
+                className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+
+            <div className="h-11 flex justify-end items-center">
+              {/* Bulk Action Buttons */}
+              {selectedCategories.length > 0 && (
+                <div className="ml-auto flex items-center gap-3 bg-gray-900 px-3 py-2 rounded-lg border border-gray-600">
+                  <span className="text-sm text-blue-400 font-medium">
+                    {selectedCategories.length} selected
+                  </span>
+
+                  <div className="h-4 w-px bg-gray-600"></div>
+
+                  {/* Active/Inactive Toggle Buttons */}
+                  {!allSelectedAreDeleted() && (
+                    <>
+                      {!allSelectedAreActive() && (
+                        <button
+                          onClick={() => handleBulkToggleActive(true)}
+                          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          Set Active
+                        </button>
+                      )}
+
+                      {!allSelectedAreInactive() && (
+                        <button
+                          onClick={() => handleBulkToggleActive(false)}
+                          className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          Set Inactive
+                        </button>
+                      )}
+
+                      <div className="h-4 w-px bg-gray-600"></div>
+                    </>
+                  )}
+
+                  {/* Show Restore if all selected are soft-deleted */}
+                  {allSelectedAreDeleted() && (
+                    <button
+                      onClick={handleBulkRestore}
+                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Restore
+                    </button>
+                  )}
+
+                  {/* Show Delete if any selected are NOT deleted */}
+                  {anySelectedNotDeleted() && (
+                    <button
+                      onClick={handleBulkDelete}
+                      className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Delete
+                    </button>
+                  )}
+
+                  {/* Show Delete Forever if all selected are soft-deleted */}
+                  {allSelectedAreDeleted() && (
+                    <button
+                      onClick={handleBulkDelete}
+                      className="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-sm font-semibold rounded-lg transition-colors"
+                    >
+                      Delete Forever
+                    </button>
+                  )}
+
+                  <div className="h-4 w-px bg-gray-600"></div>
+
+                  <button
+                    onClick={() => setSelectedCategories([])}
+                    className="text-gray-400 hover:text-white text-sm transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -264,6 +471,18 @@ export default function CategoryManagePage() {
               <table className="w-full border-collapse">
                 <thead className="bg-gray-900">
                   <tr>
+                    {/*  Checkbox Column */}
+                    <th className="px-6 py-4 whitespace-nowrap text-left">
+                      <input
+                        type="checkbox"
+                        checked={
+                          categories.length > 0 &&
+                          selectedCategories.length === categories.length
+                        }
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-6 py-4 whitespace-nowrap text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                       No
                     </th>
@@ -293,10 +512,22 @@ export default function CategoryManagePage() {
 
                 <tbody className="divide-y divide-gray-700">
                   {categories.map((category, i) => (
-                    <tr 
-                      key={category.id} 
-                      className="hover:bg-gray-700/40 transition-colors"
+                    <tr
+                      key={category.id}
+                      className={`hover:bg-gray-700/40 transition-colors ${
+                        selectedCategories.includes(category.id) ? 'bg-gray-700/20' : ''
+                      }`}
                     >
+                      {/*  Checkbox */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(category.id)}
+                          onChange={() => handleSelectCategory(category.id)}
+                          className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                        />
+                      </td>
+
                       {/* Row Number */}
                       <td className="px-6 py-4 whitespace-nowrap text-gray-300 text-sm">
                         {(filters.pageNumber - 1) * filters.pageSize + i + 1}
@@ -330,7 +561,7 @@ export default function CategoryManagePage() {
                           >
                             {category.isActive ? 'Active' : 'Inactive'}
                           </span>
-                          
+
                           {/* Deleted Badge */}
                           {category.isDeleted && (
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap w-fit bg-red-900/30 text-red-400 border border-red-800">
@@ -431,10 +662,10 @@ export default function CategoryManagePage() {
             <div className="p-6">
               <h3 className="text-lg font-bold text-white mb-3">
                 {deleteModal.isPermanent
-                  ? '⚠️ Permanently Delete Category'
-                  : 'Delete Category'}
+                  ? '⚠️ Permanently Delete ' + (deleteModal.isMultiple ? 'Categories' : 'Category')
+                  : 'Delete ' + (deleteModal.isMultiple ? 'Categories' : 'Category')}
               </h3>
-              
+
               <div className="mb-6">
                 {deleteModal.isPermanent ? (
                   <div className="space-y-3">
@@ -443,29 +674,38 @@ export default function CategoryManagePage() {
                       <span className="text-red-400 font-semibold">
                         permanently delete
                       </span>{' '}
-                      this category?
+                      {deleteModal.isMultiple
+                        ? `${selectedCategories.length} ${selectedCategories.length === 1 ? 'category' : 'categories'}`
+                        : 'this category'}?
                     </p>
-                    <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
-                      <p className="text-red-300 font-medium">
-                        "{deleteModal.category?.name}"
-                      </p>
-                    </div>
+                    {!deleteModal.isMultiple && (
+                      <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
+                        <p className="text-red-300 font-medium">
+                          "{deleteModal.category?.name}"
+                        </p>
+                      </div>
+                    )}
                     <p className="text-sm text-gray-400">
-                      ⚠️ This action cannot be undone and will remove all data associated with this category.
+                      ⚠️ This action cannot be undone and will remove all data associated with {deleteModal.isMultiple ? 'these categories' : 'this category'}.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <p className="text-gray-300">
-                      Are you sure you want to delete this category?
+                      Are you sure you want to delete{' '}
+                      {deleteModal.isMultiple
+                        ? `${selectedCategories.length} ${selectedCategories.length === 1 ? 'category' : 'categories'}`
+                        : 'this category'}?
                     </p>
-                    <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
-                      <p className="text-white font-medium">
-                        "{deleteModal.category?.name}"
-                      </p>
-                    </div>
+                    {!deleteModal.isMultiple && (
+                      <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
+                        <p className="text-white font-medium">
+                          "{deleteModal.category?.name}"
+                        </p>
+                      </div>
+                    )}
                     <p className="text-sm text-gray-400">
-                      The category will be marked as deleted and can be restored later.
+                      {deleteModal.isMultiple ? 'The categories' : 'The category'} will be marked as deleted and can be restored later.
                     </p>
                   </div>
                 )}
@@ -474,7 +714,7 @@ export default function CategoryManagePage() {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() =>
-                    setDeleteModal({ show: false, category: null, isPermanent: false })
+                    setDeleteModal({ show: false, category: null, isPermanent: false, isMultiple: false })
                   }
                   className="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
                 >
@@ -502,27 +742,32 @@ export default function CategoryManagePage() {
           <div className="bg-gray-800 rounded-xl w-full max-w-md border border-gray-700 shadow-2xl">
             <div className="p-6">
               <h3 className="text-lg font-bold text-white mb-3">
-                ♻️ Restore Category
+                ♻️ Restore {restoreModal.isMultiple ? 'Categories' : 'Category'}
               </h3>
-              
+
               <div className="mb-6 space-y-2">
                 <p className="text-gray-300">
-                  Are you sure you want to restore this category?
+                  Are you sure you want to restore{' '}
+                  {restoreModal.isMultiple
+                    ? `${selectedCategories.length} ${selectedCategories.length === 1 ? 'category' : 'categories'}`
+                    : 'this category'}?
                 </p>
-                <div className="bg-green-900/20 border border-green-800 rounded-lg p-3">
-                  <p className="text-green-300 font-medium">
-                    "{restoreModal.category?.name}"
-                  </p>
-                </div>
+                {!restoreModal.isMultiple && (
+                  <div className="bg-green-900/20 border border-green-800 rounded-lg p-3">
+                    <p className="text-green-300 font-medium">
+                      "{restoreModal.category?.name}"
+                    </p>
+                  </div>
+                )}
                 <p className="text-sm text-gray-400">
-                  The category will be restored and unmarked as deleted.
+                  {restoreModal.isMultiple ? 'The categories' : 'The category'} will be restored and unmarked as deleted.
                 </p>
               </div>
 
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() =>
-                    setRestoreModal({ show: false, category: null })
+                    setRestoreModal({ show: false, category: null, isMultiple: false })
                   }
                   className="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
                 >

@@ -1,11 +1,14 @@
 using System.Net;
 using LoLStore.API.Models;
 using LoLStore.API.Models.DiscountModel;
+using LoLStore.Core.Constants;
 using LoLStore.Core.Contracts;
+using LoLStore.Core.DTO.Discounts;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
-using LoLStore.Services.Shop;
+using LoLStore.Services.Helpers;
 using LoLStore.Services.Shop.Discounts;
+using LoLStore.Services.Shop.Orders;
 using LoLStore.WebAPI.Models.DiscountModel;
 using Mapster;
 using MapsterMapper;
@@ -21,9 +24,12 @@ public static class DiscountEndpoints
 
         #region GET Methods
 
-        builder.MapGet("/", GetPagedDiscounts)
+        builder.MapGet("/", GetDiscounts)
+            .Produces<ApiResponse<IPagedList<DiscountDto>>>();
+
+        builder.MapGet("/byManager", GetDiscountsByManager)
             .RequireAuthorization("RequireManagerRole")
-            .Produces<ApiResponse<PaginationResult<DiscountDto>>>();
+            .Produces<ApiResponse<IPagedList<DiscountAdminDto>>>();
 
         builder.MapGet("/{id:guid}", GetDiscountById)
             .Produces<ApiResponse<DiscountDto>>();
@@ -47,15 +53,27 @@ public static class DiscountEndpoints
         #region PUT Methods
 
         builder.MapPut("/{id:guid}", UpdateDiscount)
-            .RequireAuthorization("RequireManagerRole")
-            .Produces<ApiResponse<DiscountDto>>();
+            .RequireAuthorization("RequireManagerRole");
+
+        builder.MapPut("/toggleShowOnMenu/{id:guid}", ToggleActiveStatus)
+            .RequireAuthorization("RequireManagerRole");
+
+        #endregion
+
+        #region DELETE Methods
+
+        builder.MapDelete("/toggleDelete/{id:guid}", ToggleDeleteDiscount)
+            .RequireAuthorization("RequireManagerRole");
+
+        builder.MapDelete("/{id:guid}", DeleteDiscount)
+            .RequireAuthorization("RequireAdminRole");
 
         #endregion
 
         return app;
     }
 
-    private static async Task<IResult> GetPagedDiscounts(
+    private static async Task<IResult> GetDiscounts(
         [AsParameters] DiscountFilterModel model,
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
@@ -72,12 +90,40 @@ public static class DiscountEndpoints
         return Results.Ok(ApiResponse.Success(paginationResult));
     }
 
+        private static async Task<IResult> GetDiscountsByManager(
+        [AsParameters] DiscountManagerFilterModel model,
+        [FromServices] IDiscountRepository repository,
+        [FromServices] IMapper mapper)
+    {
+        var condition = mapper.Map<DiscountQuery>(model);
+
+        model.SortColumn = 
+            SortColumnResolver.DateFilterResolve<Discount>(model.DateFilter, nameof(Discount.Code));
+
+        model.SortColumn = StatusFilterResolve<Discount>(model.Status, model.SortColumn);
+
+        if (condition.DateFilter == DateFilterType.Deleted)
+        {
+            condition.IsDeleted = true;
+        }
+
+        var discounts = await repository.GetPagedDiscountAsync(
+            condition,
+            model,
+            p => p.ProjectToType<DiscountAdminDto>());
+
+        var paginationResult = new PaginationResult<DiscountAdminDto>(discounts);
+
+        return Results.Ok(ApiResponse.Success(paginationResult));
+    }
+
+
     private static async Task<IResult> GetDiscountById(
         [FromRoute] Guid id,
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
     {
-        var discount = await repository.GetDiscountByIdAsync(id);
+        var discount = await repository.GetByIdAsync(id);
 
         if (discount == null)
         {
@@ -94,7 +140,7 @@ public static class DiscountEndpoints
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
     {
-        var discount = await repository.GetDiscountByCodeAsync(code);
+        var discount = await repository.GetByCodeAsync(code);
 
         if (discount == null)
         {
@@ -109,53 +155,36 @@ public static class DiscountEndpoints
     private static async Task<IResult> AddDiscount(
         [FromBody] DiscountEditModel model,
         [FromServices] IDiscountRepository repository,
+        [FromServices] IDiscountService service,
         [FromServices] IMapper mapper)
     {
-        if (await repository.IsDiscountExistedAsync(Guid.Empty, model.Code))
-        {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.Conflict,
-                $"Discount code '{model.Code}' already exists."));
-        }
+        var dto = mapper.Map<CreateDiscountDto>(model);
+        var result = await service.CreateAsync(dto);
 
-        var discount = mapper.Map<Discount>(model);
-
-        await repository.AddOrUpdateDiscountAsync(discount);
-
-        return Results.Ok(ApiResponse.Success(
-            mapper.Map<DiscountDto>(discount),
-            HttpStatusCode.Created));
+        return Results.Created(
+            $"/api/discounts/{result}",
+            ApiResponse.Success(
+                result,
+                HttpStatusCode.Created)
+        );
     }
 
     private static async Task<IResult> UpdateDiscount(
         [FromRoute] Guid id,
         [FromBody] DiscountEditModel model,
+        [FromServices] IDiscountService service,
         [FromServices] IDiscountRepository repository,
         [FromServices] IMapper mapper)
-    {
-        if (await repository.IsDiscountExistedAsync(id, model.Code))
-        {
-            return Results.Ok(ApiResponse.Fail(
-                HttpStatusCode.Conflict,
-                $"Discount code '{model.Code}' already exists."));
-        }
+    {        
+        var dto = mapper.Map<UpdateDiscountDto>((id, model));
 
-        var discount = await repository.GetDiscountByIdAsync(id);
-        if (discount == null)
-        {
-            return Results.NotFound(ApiResponse.Fail(
-                HttpStatusCode.NotFound,
-                "Discount not found."));
-        }
-
-        mapper.Map(model, discount);
-
-        await repository.AddOrUpdateDiscountAsync(discount);
+        await service.UpdateAsync(dto);
 
         return Results.Ok(ApiResponse.Success(
-            mapper.Map<DiscountDto>(discount),
-            HttpStatusCode.OK));
+            ApiResponse.Success("Discount updated successfully.", HttpStatusCode.NoContent)
+        ));
     }
+
 
     private static async Task<IResult> CheckValidDiscount(
         [FromBody] DiscountOrdersModel model,
@@ -198,4 +227,52 @@ public static class DiscountEndpoints
 
     }
 
+    private static string StatusFilterResolve<TEntity>(
+        DiscountStatus? statusFilter,
+        string defaultColumn)
+        where TEntity : BaseEntity
+    {
+        return statusFilter switch
+        {
+            DiscountStatus.Active => nameof(Discount.Status),
+            DiscountStatus.Inactive => nameof(Discount.Status),
+            DiscountStatus.Expired => nameof(Discount.Status),
+            DiscountStatus.Scheduled => nameof(Discount.Status),
+            _ => defaultColumn
+        };
+    }
+
+    private static async Task<IResult> ToggleActiveStatus(
+        [FromRoute] Guid id,
+        [FromServices] IDiscountService service,
+        CancellationToken ct)
+    {
+        await service.ToggleActiveAsync(id, ct);
+        return Results.Ok(
+            ApiResponse.Success("Discount visibility toggled.", HttpStatusCode.NoContent)
+        );
+    }
+
+    private static async Task<IResult> ToggleDeleteDiscount(
+        [FromRoute] Guid id,
+        [FromServices] IDiscountService service,
+        CancellationToken ct)
+    {
+        await service.ToggleSoftDeleteAsync(id, ct);
+        return Results.Ok(
+                ApiResponse.Success("Discount soft-deleted successfully.", HttpStatusCode.NoContent)
+            );
+    }
+
+    private static async Task<IResult> DeleteDiscount(
+        [FromRoute] Guid id,
+        [FromServices] IDiscountService service,
+        CancellationToken ct)
+    {
+        await service.DeletePermanentlyAsync(id, ct);
+
+        return Results.Ok(
+            ApiResponse.Success("Discount deleted permanently.", HttpStatusCode.NoContent)
+        );
+    }
 }

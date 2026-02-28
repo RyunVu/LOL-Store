@@ -6,6 +6,11 @@ export const discountsApi = {
     return data.result
   },
 
+  getDiscountsByManager: async (params = {}) => {
+    const { data } = await apiClient.get('/discounts/byManager', { params })
+    return data.result
+  },
+
   getDiscountById: async (id) => {
     if (!id) throw new Error('Discount id is required')
     const { data } = await apiClient.get(`/discounts/${id}`)
@@ -18,28 +23,35 @@ export const discountsApi = {
     return data.result
   },
 
-  createDiscount: async (payload) => {
-    const { data } = await apiClient.post('/discounts', payload)
+  createDiscount: async (discountData) => {
+    const { data } = await apiClient.post('/discounts', discountData)
     return data.result
   },
 
-  updateDiscount: async (id, payload) => {
-    const { data } = await apiClient.put(`/discounts/${id}`, payload)
+  updateDiscount: async (id, discountData) => {
+    if (!id) throw new Error('Discount id is required')
+    const { data } = await apiClient.put(`/discounts/${id}`, discountData)
     return data.result
   },
 
   toggleActive: async (id) => {
-    const { data } = await apiClient.patch(`/discounts/${id}/toggle`)
+    if (!id) throw new Error('Discount id is required')
+    const { data } = await apiClient.put(`/discounts/toggleShowOnMenu/${id}`)
     return data.result
   },
 
-  validateDiscount: async (payload) => {
-    const { data } = await apiClient.post('/discounts/validate', payload)
+  validateDiscount: async (discountData) => {
+    const { data } = await apiClient.post('/validateDiscount', discountData)
     return data.result
   },
 
-  previewDiscount: async (payload) => {
-    const { data } = await apiClient.post('/discounts/preview', payload)
-    return data.result
+  toggleSoftDeleteDiscount: async (id) => {
+    if (!id) throw new Error('Discount id is required')
+    await apiClient.delete(`/discounts/toggleDelete/${id}`)
+  },
+
+  deleteDiscountPermanently: async (id) => {
+    if (!id) throw new Error('Discount id is required')
+    await apiClient.delete(`/discounts/${id}`)
   },
 }

@@ -1,12 +1,13 @@
 using System.Net;
-using LoLStore.API.Domain.Orders;
+using System.Security.Claims;
 using LoLStore.API.Filter;
 using LoLStore.API.Identities;
 using LoLStore.API.Models;
 using LoLStore.API.Models.OrderModel;
+using LoLStore.Core.DTO.Orders;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
-using LoLStore.Services.Shop;
+using LoLStore.Services.Shop.Orders;
 using LoLStore.WebAPI.Models.OrderModel;
 using Mapster;
 using MapsterMapper;
@@ -42,6 +43,9 @@ public static class OrderEndpoints
         builder.MapPut("/{orderId:guid}/status", UpdateOrderStatus)
             .RequireAuthorization("RequireManagerRole")
             .Produces<ApiResponse<OrderDto>>();
+        
+        builder.MapPut("/{id:guid}", UpdateOrder)
+            .RequireAuthorization("RequireManagerRole");
 
         builder.MapDelete("/{orderId:guid}/cancel", CancelOrderByUser)
             .RequireAuthorization()
@@ -59,13 +63,13 @@ public static class OrderEndpoints
         model.SortColumn ??= "OrderDate";
         var query = mapper.Map<OrderQuery>(model);
 
-        var orders = await repository.GetPagedOrderAsync(
+        var orders = await repository.GetPagedOrdersAsync(
             query,
             model,
-            p => p.ProjectToType<OrderDto>());
+            p => p.ProjectToType<OrderAdminDto>());
 
         return Results.Ok(
-            ApiResponse.Success(new PaginationResult<OrderDto>(orders)));
+            ApiResponse.Success(new PaginationResult<OrderAdminDto>(orders)));
     }
 
     private static async Task<IResult> GetOrderByUser(
@@ -94,73 +98,49 @@ public static class OrderEndpoints
     private static async Task<IResult> CheckOut(
         HttpContext context,
         [FromBody] OrderEditModel model,
-        [FromServices] IOrderRepository repository,
-        [FromServices] IProductRepository productRepo,
+        [FromServices] IOrderService orderService,
         [FromServices] IMapper mapper)
     {
-        if (!model.Detail.Any() || model.Detail.Any(d => d.Quantity <= 0))
+        try
+        {
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdClaim, out var userId))
+                return Results.Unauthorized();
+
+            var dto = new CreateOrderDto
+            {
+                Name = model.Name,
+                Email = context.User.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty,
+                ShipAddress = model.ShipAddress,
+                Phone = model.Phone,
+                Note = model.Note,
+                DiscountCode = model.DiscountCode,
+                Items = model.Detail.Select(d => new OrderItemDto
+                {
+                    ProductId = d.Id,
+                    Quantity = d.Quantity ?? 0
+                }).ToList()
+            };
+
+            var orderId = await orderService.CreateAsync(userId, dto);
+            var order = await orderService.GetByIdAsync(orderId);
+
+            if (order == null)
+                return Results.StatusCode(StatusCodes.Status500InternalServerError);
+
+            var response = order.Adapt<OrderDto>();
+            return Results.Ok(ApiResponse.Success(response));
+        }
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(
-                ApiResponse.Fail(
-                    HttpStatusCode.BadRequest,
-                    "Order must contain at least one product with a valid quantity."));
+                ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
         }
-
-        if (!string.IsNullOrWhiteSpace(model.DiscountCode))
+        catch (KeyNotFoundException ex)
         {
-            var tempOrder = await repository.GetProductOrderAsync(model.Detail);
-            var discount = await repository.CheckValidDiscountAsync(
-                model.DiscountCode,
-                tempOrder.TotalAmount);
-
-            if (discount is null)
-            {
-                return Results.Json(
-                    ApiResponse.Fail(
-                        HttpStatusCode.NotAcceptable,
-                        "Discount code is invalid or unavailable."),
-                    statusCode: StatusCodes.Status406NotAcceptable);
-            }
+            return Results.NotFound(
+                ApiResponse.Fail(HttpStatusCode.NotFound, ex.Message));
         }
-
-        var outOfStock = new List<string>();
-
-        foreach (var item in model.Detail)
-        {
-            if (!await repository.CheckQuantityProductAsync(
-                    item.Id,
-                    item.Quantity!.Value)) 
-            {
-                var product = await productRepo.GetProductByIdAsync(item.Id);
-                outOfStock.Add(product is null
-                    ? "Product does not exist."
-                    : $"Product '{product.Name}' is out of stock.");
-            }
-        }
-
-        if (outOfStock.Any())
-        {
-            return Results.UnprocessableEntity(
-                ApiResponse.Fail(HttpStatusCode.UnprocessableEntity, outOfStock.ToArray()));
-        }
-
-        var userDto = context.GetCurrentUser();
-        if (userDto is null)
-            return Results.Unauthorized();
-
-        var order = mapper.Map<Order>(model);
-        var user = mapper.Map<User>(userDto);
-
-        order = await repository.AddOrderAsync(order, user);
-        await repository.AddProductOrderAsync(order.Id, model.Detail);
-
-        if (!string.IsNullOrWhiteSpace(model.DiscountCode))
-        {
-            await repository.AddDiscountOrderAsync(order, model.DiscountCode);
-        }
-
-        return Results.Ok(
-            ApiResponse.Success(mapper.Map<OrderDto>(order)));
     }
 
 
@@ -169,7 +149,7 @@ public static class OrderEndpoints
         [FromServices] IOrderRepository repository,
         [FromServices] IMapper mapper)
     {
-        var order = await repository.GetOrderByIdAsync(orderId);
+        var order = await repository.GetByIdWithDetailsAsync(orderId);
         if (order is null)
             return Results.NotFound(
                 ApiResponse.Fail(HttpStatusCode.NotFound, "Order was not found."));
@@ -183,7 +163,7 @@ public static class OrderEndpoints
         [FromServices] IOrderRepository repository,
         [FromServices] IMapper mapper)
     {
-        var order = await repository.GetOrderByCodeAsync(orderCode);
+        var order = await repository.GetByCodeAsync(orderCode);
         if (order is null)
             return Results.NotFound(
                 ApiResponse.Fail(HttpStatusCode.NotFound, "Order was not found."));
@@ -196,62 +176,83 @@ public static class OrderEndpoints
     private static async Task<IResult> UpdateOrderStatus(
         [FromRoute] Guid orderId,
         [FromQuery] OrderStatus newStatus,
-        [FromServices] IOrderRepository repository,
+        [FromServices] IOrderService orderService,
         [FromServices] IMapper mapper)
     {
-        var order = await repository.GetOrderByIdAsync(orderId);
-        if (order is null)
-            return Results.NotFound(
-                ApiResponse.Fail(HttpStatusCode.NotFound, "Order was not found."));
+        try
+        {
+            var order = await orderService.GetByIdAsync(orderId);
+            if (order is null)
+                return Results.NotFound(
+                    ApiResponse.Fail(HttpStatusCode.NotFound, "Order was not found."));
 
-        if (!OrderStatusTransitionPolicy.CanTransition(order.Status, newStatus))
+            await orderService.ChangeStatusAsync(orderId, newStatus);
+            
+            var updatedOrder = await orderService.GetByIdAsync(orderId);
+
+            if (updatedOrder == null)
+                return Results.StatusCode(StatusCodes.Status500InternalServerError);
+
+            return Results.Ok(
+                ApiResponse.Success(mapper.Map<OrderAdminDto>(updatedOrder)));
+        }
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(
-                ApiResponse.Fail(
-                    HttpStatusCode.BadRequest,
-                    $"Invalid order status transition from '{order.Status}' to '{newStatus}'."));
+                ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
         }
-
-        order.Status = newStatus;
-        await repository.ToggleOrderAsync(order, newStatus);
-
-        return Results.Ok(
-            ApiResponse.Success(mapper.Map<OrderDto>(order)));
     }
+
+    private static async Task<IResult> UpdateOrder(
+        [FromRoute] Guid id,
+        [FromBody] OrderEditModel? model,
+        [FromServices] IOrderService service,
+        [FromServices] IMapper mapper)
+    {        
+        var dto = mapper.Map<UpdateOrderDto>((id, model));
+
+        await service.UpdateAsync(dto);
+
+        return Results.Ok(ApiResponse.Success(
+            ApiResponse.Success("Order updated successfully.", HttpStatusCode.OK)
+        ));
+    }
+
 
     private static async Task<IResult> CancelOrderByUser(
         HttpContext context,
         [FromRoute] Guid orderId,
-        [FromServices] IOrderRepository repository,
+        [FromServices] IOrderService orderService,
         [FromServices] IMapper mapper)
     {
-        var order = await repository.GetOrderByIdAsync(orderId);
-        if (order is null)
-            return Results.NotFound(
-                ApiResponse.Fail(HttpStatusCode.NotFound, "Order was not found."));
-
-        var user = context.GetCurrentUser();
-        if (user is null)
-            return Results.Unauthorized();
-
-        if (order.UserId != user.Id)
+        try
         {
-            return Results.Forbid();
-        }
+            var user = context.GetCurrentUser();
+            if (user is null)
+                return Results.Unauthorized();
 
-        if (!OrderStatusTransitionPolicy.CanTransition(
-                order.Status,
-                OrderStatus.Cancelled))
+            var order = await orderService.GetByIdAsync(orderId);
+            if (order is null)
+                return Results.NotFound(
+                    ApiResponse.Fail(HttpStatusCode.NotFound, "Order was not found."));
+
+            if (order.UserId != user.Id)
+                return Results.Forbid();
+
+            await orderService.CancelAsync(orderId);
+
+            var updatedOrder = await orderService.GetByIdAsync(orderId);
+
+            if (updatedOrder == null)
+                return Results.StatusCode(StatusCodes.Status500InternalServerError);
+                
+            return Results.Ok(
+                ApiResponse.Success(mapper.Map<OrderDto>(updatedOrder)));
+        }
+        catch (InvalidOperationException ex)
         {
             return Results.UnprocessableEntity(
-                ApiResponse.Fail(
-                    HttpStatusCode.UnprocessableEntity,
-                    "This order can no longer be cancelled."));
+                ApiResponse.Fail(HttpStatusCode.UnprocessableEntity, ex.Message));
         }
-
-        order = await repository.CancelOrderAsync(orderId);
-
-        return Results.Ok(
-            ApiResponse.Success(mapper.Map<OrderDto>(order)));
     }
 }

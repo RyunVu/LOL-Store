@@ -24,7 +24,7 @@ public class DiscountMap : IEntityTypeConfiguration<Discount>
             .IsRequired()
             .HasDefaultValue(false);
 
-        builder.Property(d => d.MinimunOrderAmount)
+        builder.Property(d => d.MinimumOrderAmount)
             .HasPrecision(18, 2);
 
         builder.Property(d => d.MaxUses)
@@ -50,7 +50,14 @@ public class DiscountMap : IEntityTypeConfiguration<Discount>
             .IsRequired()
             .HasDefaultValue(true);
 
+        builder.Ignore(d => d.Status);
+        
         builder.HasIndex(d => d.Code)
             .IsUnique();
+
+        builder.HasMany(d => d.Orders)
+            .WithOne(o => o.Discount)
+            .HasForeignKey(o => o.DiscountId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

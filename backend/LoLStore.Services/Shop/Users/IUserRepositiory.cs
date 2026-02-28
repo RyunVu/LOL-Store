@@ -2,7 +2,7 @@ using LoLStore.Core.DTO;
 using LoLStore.Core.Entities;
 using LoLStore.Core.Queries;
 
-namespace LoLStore.Services.Shop;
+namespace LoLStore.Services.Shop.Users;
 
 public interface IUserRepository
 {
@@ -15,6 +15,8 @@ public interface IUserRepository
     Task<User?> GetUserByIdAsync(Guid id, bool getFull = false, CancellationToken cancellationToken = default);
 
     Task<bool> ChangePasswordAsync(User user, string oldPassword, string newPassword, CancellationToken cancellationToken = default);
+
+    Task<bool> ResetPasswordAsync(User user, string newPassword, CancellationToken cancellationToken = default);
 
     Task<User?> RegisterAsync(User user, CancellationToken cancellationToken = default);
 
@@ -33,4 +35,16 @@ public interface IUserRepository
         IPagingParams pagingParams,
         Func<IQueryable<User>, IQueryable<T>> mapper,
         CancellationToken cancellationToken = default);
+
+    Task<bool> BanUserAsync(Guid userId, bool isPermanent, int? durationDays, string? reason, CancellationToken cancellationToken = default);
+    Task<bool> UnbanUserAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    Task<IPagedList<T>> GetPagedOrdersByUserAsync<T>(
+        Guid userId,
+        IPagingParams pagingParams,
+        Func<IQueryable<Order>, IQueryable<T>> mapper,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> UpdateUserAsync(User user, CancellationToken cancellationToken = default);
+    Task<bool> ToggleDeleteUserAsync(Guid userId, CancellationToken cancellationToken = default);
 }

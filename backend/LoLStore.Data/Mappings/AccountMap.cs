@@ -34,6 +34,22 @@ public class AccountMap : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => u.Email)
             .IsUnique();
+		
+		builder.Ignore(u => u.IsBanned);
+
+		builder.Property(u => u.CreatedAt)
+			.HasColumnType("datetime2")
+			.HasDefaultValueSql("SYSUTCDATETIME()")
+			.ValueGeneratedOnAdd();
+			
+		builder.Property(u => u.UpdatedAt)
+			.HasColumnType("datetime2");
+
+		builder.Property(u => u.DeletedAt)
+			.HasColumnType("datetime2");
+
+		builder.Property(u => u.IsDeleted)
+			.HasDefaultValue(false);
 
 		builder.HasMany(s => s.Roles)
 			.WithMany(s => s.Users)

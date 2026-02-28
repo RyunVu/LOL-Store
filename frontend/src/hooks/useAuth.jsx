@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/store/authStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { authApi } from '@/api/auth.api'
 import { setAccessToken, clearAccessToken } from '@/api/client/token'
 
@@ -41,6 +41,28 @@ export function useAuth() {
     }
   }
 
+  const register = async (userData) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      await authApi.register(userData)
+      navigate('/login')
+
+      return { success: true }
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0] ||
+        'Registration failed'
+
+      setError(message)
+      return { success: false }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const logout = async () => {
     try {
       await authApi.logout()
@@ -58,6 +80,7 @@ export function useAuth() {
     loading,
     error,
     login,
+    register,
     logout,
     setError,
   }

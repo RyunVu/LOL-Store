@@ -2,13 +2,17 @@ using LoLStore.Core.Contracts;
 
 namespace LoLStore.Core.Entities;
 
-public class User : IEntity
+public enum BanStatus
 {
-    public Guid Id { get; set; }
-    
+    None = 0,
+    Temporary = 1,
+    Permanent = 2
+}
+
+public class User : BaseEntity
+{    
     // Required fields
     public string Name { get; set; } = string.Empty;
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string UserName { get; set; } = string.Empty;
@@ -16,6 +20,14 @@ public class User : IEntity
     // Optional fields
     public string? Phone { get; set; }
     public string? Address { get; set; }
+
+    // Ban status
+    public BanStatus BanStatus { get; set; } = BanStatus.None;
+    public DateTime? BannedUntil { get; set; }
+    public string? BanReason { get; set; }
+    public bool IsBanned =>
+        BanStatus == BanStatus.Permanent ||
+        (BanStatus == BanStatus.Temporary && BannedUntil.HasValue && BannedUntil > DateTime.UtcNow);
 
     // Navigation properties
     public IList<Role> Roles { get; set; } = new List<Role>();

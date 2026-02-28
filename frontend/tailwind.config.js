@@ -74,5 +74,21 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addComponents }) {
+      addComponents({
+        '.select-styled': {
+          '@apply appearance-none bg-white dark:bg-dark-800 text-text-primary-light dark:text-text-primary-dark border border-border-light dark:border-border-dark rounded-lg px-4 py-2.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-dark-700 transition-all cursor-pointer shadow-sm': {},
+          
+          '& option': {
+            '@apply bg-white dark:bg-dark-800 text-text-primary-light dark:text-text-primary-dark py-2': {},
+          },
+          
+          '& option:checked': {
+            '@apply bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300': {},
+          },
+        },
+      })
+    }
+  ],
 }

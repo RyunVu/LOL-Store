@@ -16,10 +16,12 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "pinia": "^3.0.4",
+    "rc-slider": "^11.1.9",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.70.0",
     "react-router-dom": "^7.11.0",
+    "sonner": "^2.0.7",
     "vue-router": "^4.6.4",
     "zustand": "^5.0.9"
   },

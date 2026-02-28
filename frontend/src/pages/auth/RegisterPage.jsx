@@ -20,7 +20,27 @@ export default function RegisterPage() {
   const handleChange = (e) => {
     const { name, value } = e.target
 
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData(prev => {
+    const updated = { ...prev, [name]: value }
+
+    if (name === 'confirmPassword' || name === 'password') {
+      if (updated.confirmPassword) {
+        if (updated.confirmPassword !== updated.password) {
+          setFormErrors(prev => ({
+            ...prev,
+            confirmPassword: 'Passwords do not match'
+          }))
+        } else {
+          setFormErrors(prev => ({
+            ...prev,
+            confirmPassword: ''
+          }))
+        }
+      }
+    }
+
+    return updated
+  })
 
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: '' }))
@@ -119,7 +139,11 @@ export default function RegisterPage() {
               error={formErrors.confirmPassword}
             />
 
-            <Button type="submit" loading={loading} className="w-full">
+            <Button
+              type="submit"
+              loading={loading}
+              className="w-full"
+            >
               Sign Up
             </Button>
           </form>

@@ -2,16 +2,12 @@ using LoLStore.Core.Contracts;
 
 namespace LoLStore.Core.Entities;
 
-public class Product : IEntity
-{
-    public Guid Id { get; set; }
-    
+public class Product : BaseEntity
+{    
     // Required fields
     public string Sku { get; set; } = string.Empty;
     public string UrlSlug { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    
-    public DateTime CreateDate { get; set; } = DateTime.UtcNow;
     
     // Optional description
     public string Description { get; set; } = string.Empty;
@@ -24,8 +20,7 @@ public class Product : IEntity
     // Optional note
     public string Note { get; set; } = string.Empty;
     
-    public bool Active { get; set; }
-    public bool IsDeleted { get; set; }
+    public bool IsActive { get; set; }
     public Guid SupplierId { get; set; }
     public int CountOrder { get; set; }
 

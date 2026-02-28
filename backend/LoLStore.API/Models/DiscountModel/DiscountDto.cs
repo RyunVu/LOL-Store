@@ -19,5 +19,5 @@ public class DiscountDto
 
     public bool IsActive { get; set; }
     public DiscountStatus Status { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public int OrderCount { get; set; }
 }

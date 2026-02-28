@@ -1,4 +1,5 @@
 using LoLStore.API.Models;
+using LoLStore.Core.Constants;
 
 namespace LoLStore.WebAPI.Models.DiscountModel;
 
@@ -14,15 +15,18 @@ public class DiscountFilterModel : PagingModel
     // Order constraints
     public decimal? MinimunOrderAmount { get; set; }
 
-    // Business state (not raw DB flag)
     public bool? IsActive { get; set; }
+    public bool? ValidNow { get; set; }
 
     // Validity window
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 
-    // Created date filtering (admin)
-    public int? Year { get; set; }
-    public int? Month { get; set; }
-    public int? Day { get; set; }
+}
+
+public class DiscountManagerFilterModel : DiscountFilterModel
+{
+    public bool? IsDeleted { get; set; }
+    public DiscountStatus? Status { get; set; }
+    public DateFilterType? DateFilter { get; set; }
 }

@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   categoryIds: [],
   description: '',
   note: '',
-  active: true,
+  isActive: true,
   editReason: '',
 }
 
@@ -467,8 +467,8 @@ export default function ProductForm({
         <label className="flex items-center gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
-            name="active"
-            checked={form.active}
+            name="isActive"
+            checked={form.isActive}
             onChange={handleChange}
             className="w-5 h-5 accent-blue-600"
           />

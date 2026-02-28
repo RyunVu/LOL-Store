@@ -1,3 +1,5 @@
+using LoLStore.Core.Constants;
+
 namespace LoLStore.Core.Queries;
 
 public class ProductQuery
@@ -8,7 +10,7 @@ public class ProductQuery
     public string? CategorySlug { get; set; }
     public string? SubCategorySlug { get; set; }
 
-    public bool? Active { get; set; }
+    public bool? IsActive { get; set; }
     public bool? IsDeleted { get; set; }
     public bool? IsPublished { get; set; }
 
@@ -18,4 +20,7 @@ public class ProductQuery
 
     public decimal? MinPrice { get; set; }
     public decimal? MaxPrice { get; set; }
+
+    public DateFilterType? DateFilter { get; set; }
+    public SortOrder? SortOrder { get; set; }
 }

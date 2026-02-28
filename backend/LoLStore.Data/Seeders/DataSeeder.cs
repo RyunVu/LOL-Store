@@ -103,7 +103,6 @@ public class DataSeeder : IDataSeeder
             Phone = "N/A",
             UserName = "admin",
             Password = _hasher.HashPassword(adminPassword),
-            CreatedDate = DateTime.UtcNow,
             Roles = roles.ToList()
         };
 
@@ -136,7 +135,7 @@ public class DataSeeder : IDataSeeder
             Code = "WELCOME10",
             DiscountValue = 10, // 10% off
             IsPercentage = true,
-            MinimunOrderAmount = 0,
+            MinimumOrderAmount = 0,
             MaxUses = 100,
             TimesUsed = 0,
             StartDate = DateTime.UtcNow,
@@ -150,7 +149,7 @@ public class DataSeeder : IDataSeeder
             Code = "SAVE50",
             DiscountValue = 50, // $50 off
             IsPercentage = false,
-            MinimunOrderAmount = 300, // only for big orders
+            MinimumOrderAmount = 300, // only for big orders
             MaxUses = 50,
             TimesUsed = 0,
             StartDate = DateTime.UtcNow,
@@ -164,7 +163,7 @@ public class DataSeeder : IDataSeeder
             Code = "WEEKEND5",
             DiscountValue = 5, // 5% off
             IsPercentage = true,
-            MinimunOrderAmount = 100,
+            MinimumOrderAmount = 100,
             MaxUses = null, // unlimited
             TimesUsed = 0,
             StartDate = DateTime.UtcNow.AddDays(-3), // started already
@@ -240,12 +239,11 @@ public class DataSeeder : IDataSeeder
                 UrlSlug = "ahri-figurine",
                 Name = "Ahri The Nine-Tailed Fox Figurine",
                 Description = "A detailed 1/7 scale Ahri figurine with magic orb accessory.",
-                CreateDate = DateTime.UtcNow,
                 Price = 89.99m,
                 Quantity = 50,
                 Discount = 0,
                 Note = "Limited edition, highly detailed collectible.",
-                Active = true,
+                IsActive = true,
                 IsDeleted = false,
                 SupplierId = suppliers[0].Id, // Riot Merch Store
                 CountOrder = 0,
@@ -258,12 +256,11 @@ public class DataSeeder : IDataSeeder
                 UrlSlug = "yasuo-statue",
                 Name = "Yasuo The Unforgiven Statue",
                 Description = "Premium resin statue of Yasuo in Wind Slash pose.",
-                CreateDate = DateTime.UtcNow,
                 Price = 159.99m,
                 Quantity = 30,
                 Discount = 10, // maybe 10% off
                 Note = "Includes certificate of authenticity.",
-                Active = true,
+                IsActive = true,
                 IsDeleted = false,
                 SupplierId = suppliers[1].Id, // AnimeFigures Co.
                 CountOrder = 0,
@@ -276,12 +273,11 @@ public class DataSeeder : IDataSeeder
                 UrlSlug = "jinx-acrylic-stand",
                 Name = "Jinx Acrylic Stand",
                 Description = "Colorful acrylic display stand featuring Jinx and Pow-Pow.",
-                CreateDate = DateTime.UtcNow,
                 Price = 19.99m,
                 Quantity = 200,
                 Discount = 0,
                 Note = "Perfect for your desk setup.",
-                Active = true,
+                IsActive = true,
                 IsDeleted = false,
                 SupplierId = suppliers[2].Id, // LoL Collectibles Ltd.
                 CountOrder = 0,

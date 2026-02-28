@@ -25,11 +25,11 @@ public class OrderDto
 
 	public decimal DiscountAmount { get; set; }
 
-    public decimal Total { get; set; }
+    public decimal TotalAmount  { get; set; }
 
     public DiscountDto? Discount { get; set; }
 
-	public IList<OrderDetailDto> Details { get; set; } = new List<OrderDetailDto>();
+	public IList<OrderDetailDto> OrderItems { get; set; } = new List<OrderDetailDto>();
 }
 
 public class OrderDetailDto

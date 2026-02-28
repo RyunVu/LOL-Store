@@ -106,15 +106,12 @@ namespace LoLStore.Data.Migrations
                     b.Property<int?>("MaxUses")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("MinimunOrderAmount")
+                    b.Property<decimal?>("MinimumOrderAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
 
                     b.Property<int>("TimesUsed")
                         .ValueGeneratedOnAdd()
@@ -198,6 +195,12 @@ namespace LoLStore.Data.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("DiscountAmount")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(18, 2)
@@ -211,6 +214,9 @@ namespace LoLStore.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDiscountApplied")
                         .ValueGeneratedOnAdd()
@@ -247,6 +253,9 @@ namespace LoLStore.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -290,7 +299,7 @@ namespace LoLStore.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("Active")
+                    b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
@@ -316,20 +325,16 @@ namespace LoLStore.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("Active")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.Property<int>("CountOrder")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
-                    b.Property<DateTime>("CreateDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -342,6 +347,16 @@ namespace LoLStore.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(5,2)")
                         .HasDefaultValue(0m);
+
+                    b.Property<decimal>("DiscountedPrice")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("decimal(18,2)")
+                        .HasComputedColumnSql("[Price] - ([Price] * [Discount] / 100.0)", true);
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -380,6 +395,9 @@ namespace LoLStore.Data.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("UrlSlug")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -387,13 +405,25 @@ namespace LoLStore.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CountOrder");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("DiscountedPrice");
+
+                    b.HasIndex("Name");
+
                     b.HasIndex("Sku")
                         .IsUnique();
 
                     b.HasIndex("SupplierId");
 
+                    b.HasIndex("UpdatedAt");
+
                     b.HasIndex("UrlSlug")
                         .IsUnique();
+
+                    b.HasIndex("IsActive", "IsDeleted");
 
                     b.ToTable("Products", (string)null);
                 });
@@ -512,7 +542,22 @@ namespace LoLStore.Data.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("BanReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("BanStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("BannedUntil")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
@@ -520,6 +565,9 @@ namespace LoLStore.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(450)")
                         .HasDefaultValue("");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -535,6 +583,9 @@ namespace LoLStore.Data.Migrations
 
                     b.Property<string>("Phone")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserName")
                         .IsRequired()
@@ -591,6 +642,8 @@ namespace LoLStore.Data.Migrations
 
                     b.HasIndex("CategoriesId");
 
+                    b.HasIndex("ProductsId");
+
                     b.ToTable("ProductCategories", (string)null);
                 });
 
@@ -636,7 +689,8 @@ namespace LoLStore.Data.Migrations
                 {
                     b.HasOne("LoLStore.Core.Entities.Discount", "Discount")
                         .WithMany("Orders")
-                        .HasForeignKey("DiscountId");
+                        .HasForeignKey("DiscountId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("LoLStore.Core.Entities.User", "User")
                         .WithMany("Orders")
@@ -661,7 +715,7 @@ namespace LoLStore.Data.Migrations
                     b.HasOne("LoLStore.Core.Entities.Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_Products_Details");
 
@@ -732,15 +786,13 @@ namespace LoLStore.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CategoriesId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_ProductCategories_Categories");
+                        .IsRequired();
 
                     b.HasOne("LoLStore.Core.Entities.Product", null)
                         .WithMany()
                         .HasForeignKey("ProductsId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_ProductCategories_Products");
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("RoleUser", b =>

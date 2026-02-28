@@ -8,12 +8,23 @@ public interface IDiscountRepository
     Task<IPagedList<T>> GetPagedDiscountAsync<T>(
         DiscountQuery query, 
         IPagingParams pagingParams, 
-        Func<IQueryable<Discount>, IQueryable<T>> mapper);
+        Func<IQueryable<Discount>, IQueryable<T>> mapper,
+        CancellationToken ct = default);
 
-    Task<Discount?> GetDiscountByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<Discount?> GetDiscountByCodeAsync(string code, CancellationToken cancellationToken = default);
-    Task<Discount?> AddOrUpdateDiscountAsync(Discount discount, CancellationToken cancellationToken = default);
-	Task<bool> ToggleActiveAsync(Guid id, CancellationToken cancellation = default);
-	Task<bool> DeleteDiscountAsync(Guid id, CancellationToken cancellation = default);
-	Task<bool> IsDiscountExistedAsync(Guid id, string code, CancellationToken cancellation = default);
+    Task<IPagedList<T>> GetPagedDiscountForUserAsync<T>(
+        DiscountQuery query, 
+        IPagingParams pagingParams, 
+        Func<IQueryable<Discount>, IQueryable<T>> mapper,
+        CancellationToken ct = default);
+
+    Task<Discount?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<Discount?> GetByCodeAsync(string code, CancellationToken ct = default);
+
+    // ===== Write =====
+    Task AddAsync(Discount discount, CancellationToken ct = default);
+    Task SaveChangesAsync(CancellationToken ct = default);
+    Task<bool> DeletePermanentlyAsync(Discount discount, CancellationToken ct = default);
+
+    // ===== Validation ======
+    Task<bool> IsDiscountExistedAsync(string code, CancellationToken ct = default);
 }
