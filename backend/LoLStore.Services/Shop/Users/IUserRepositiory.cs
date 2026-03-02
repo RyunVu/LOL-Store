@@ -44,7 +44,24 @@ public interface IUserRepository
         IPagingParams pagingParams,
         Func<IQueryable<Order>, IQueryable<T>> mapper,
         CancellationToken cancellationToken = default);
+    Task<List<T>> GetRecentOrdersByUserAsync<T>(
+        Guid userId,
+        int recentDays,
+        Func<IQueryable<Order>, IQueryable<T>> mapper,
+        CancellationToken cancellationToken = default);
 
     Task<bool> UpdateUserAsync(User user, CancellationToken cancellationToken = default);
     Task<bool> ToggleDeleteUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<bool> RevokeRefreshTokenAsync(
+        string token,
+        string reason,
+        string? replacedByToken = null,
+        CancellationToken cancellationToken = default);
+
+    Task RevokeAllUserRefreshTokensAsync(
+        Guid userId,
+        string reason,
+        CancellationToken cancellationToken = default);
+
+    Task<UserRefreshToken?> GetActiveRefreshTokenByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 }

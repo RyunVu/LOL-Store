@@ -78,7 +78,7 @@ public class RoleMap : IEntityTypeConfiguration<Role>
 
 public class UserRefreshTokenMap : IEntityTypeConfiguration<UserRefreshToken>
 {
-    public void Configure(EntityTypeBuilder<UserRefreshToken> builder)
+	public void Configure(EntityTypeBuilder<UserRefreshToken> builder)
     {
         builder.ToTable("UserRefreshTokens");
 
@@ -86,7 +86,7 @@ public class UserRefreshTokenMap : IEntityTypeConfiguration<UserRefreshToken>
 
         builder.Property(t => t.Token)
             .IsRequired()
-            .HasMaxLength(512); // Avoid NVARCHAR(MAX)
+            .HasMaxLength(512);
 
         builder.Property(t => t.Created)
             .IsRequired();
@@ -94,7 +94,25 @@ public class UserRefreshTokenMap : IEntityTypeConfiguration<UserRefreshToken>
         builder.Property(t => t.Expires)
             .IsRequired();
 
-        // FK mapping is already handled in UserMap
+        // --- Revocation fields ---
+        builder.Property(t => t.IsRevoked)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(t => t.RevokedAt)
+            .HasColumnType("datetime2");
+
+        builder.Property(t => t.RevokedReason)
+            .HasMaxLength(256);
+
+        // --- Rotation audit trail ---
+        builder.Property(t => t.ReplacedByToken)
+            .HasMaxLength(512);
+
+        // Computed property — not stored in DB
+        builder.Ignore(t => t.IsActive);
+        builder.Ignore(t => t.IsExpired);
+
         builder.HasOne(t => t.User)
             .WithMany(u => u.RefreshTokens)
             .HasForeignKey(t => t.UserId);

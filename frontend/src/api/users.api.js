@@ -13,6 +13,12 @@ export const usersApi = {
     return data.result
   },
 
+  getRecentOrders: async (userId) => {
+    if (!userId) throw new Error('User id is required')
+    const { data } = await apiClient.get(`/account/users/${userId}/orders/recent`)
+    return data.result
+  },
+
   // ─── Edit ────────────────────────────────────────────────────────────────
   // userId is read from JWT on backend — only send the body fields
   updateUser: async (userId, userData) => {

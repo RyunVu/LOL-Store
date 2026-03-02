@@ -185,6 +185,7 @@ export default function CartPage() {
         detail:       items.map((i) => ({ id: i.id, quantity: i.quantity })),
       })
       setPlacedOrder(placed)
+      
       clearCart()
       toast.success('Order placed successfully!')
       setStep(STEP.SUCCESS)

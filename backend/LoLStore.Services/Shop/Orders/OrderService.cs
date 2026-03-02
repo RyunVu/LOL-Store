@@ -17,82 +17,106 @@ public class OrderService : IOrderService
         _context = context;
     }
 
-    public async Task<Guid> CreateAsync(
+     public async Task<Guid> CreateAsync(
         Guid userId,
         CreateOrderDto dto,
         CancellationToken cancellationToken = default)
     {
-        // Business rule: Order must have at least one item
+        // ── 1. Basic validation ──────────────────────────────────
         if (dto.Items == null || dto.Items.Count == 0)
             throw new InvalidOperationException("Order must contain at least one item.");
 
-        // Validate all items have valid quantities
+        // ── 2. Validate every item: stock + price ────────────────
         foreach (var item in dto.Items)
         {
             if (item.Quantity <= 0)
-                throw new InvalidOperationException($"Product quantity must be greater than 0.");
+                throw new InvalidOperationException(
+                    "Product quantity must be greater than 0.");
 
-            // Check stock availability
-            if (!await _orderRepository.HasSufficientStockAsync(item.ProductId, item.Quantity, cancellationToken))
-                throw new InvalidOperationException($"Insufficient stock for product.");
+            if (!await _orderRepository.HasSufficientStockAsync(
+                    item.ProductId, item.Quantity, cancellationToken))
+                throw new InvalidOperationException(
+                    "Insufficient stock for one or more products.");
 
-            // Validate product exists and get price
-            var price = await _orderRepository.GetProductPriceAsync(item.ProductId, cancellationToken);
+            var price = await _orderRepository.GetProductPriceAsync(
+                item.ProductId, cancellationToken);
+
             if (price == null)
-                throw new KeyNotFoundException($"Product not found.");
+                throw new KeyNotFoundException(
+                    $"Product '{item.ProductId}' was not found or is inactive.");
         }
 
-        // Create order entity
+        // ── 3. Generate a unique order code ──────────────────────
+        var orderCode = await GenerateUniqueOrderCodeAsync(cancellationToken);
+
+        // ── 4. Build order header ────────────────────────────────
         var order = new Order
         {
-            UserId = userId,
-            Name = dto.Name,
-            Email = dto.Email,
-            ShipAddress = dto.ShipAddress,
-            Phone = dto.Phone,
-            Note = dto.Note,
-            OrderDate = DateTime.UtcNow,
-            Status = OrderStatus.New,
+            UserId           = userId,
+            CodeOrder        = orderCode,
+            Name             = dto.Name,
+            Email            = dto.Email,
+            ShipAddress      = dto.ShipAddress,
+            Phone            = dto.Phone,
+            Note             = dto.Note,
+            OrderDate        = DateTime.UtcNow,
+            Status           = OrderStatus.New,
             IsDiscountApplied = false,
-            DiscountAmount = 0,
-            TotalAmount = 0
+            DiscountAmount   = 0,
+            TotalAmount      = 0
         };
 
-        // Generate unique order code
-        order.CodeOrder = GenerateOrderCode();
+        // ── 5. Build order items + compute subtotal ──────────────
+        decimal subtotal = 0;
 
-        // Validate code uniqueness
-        if (await _orderRepository.ExistsByCodeAsync(order.CodeOrder, null, cancellationToken))
-            throw new InvalidOperationException("Failed to generate unique order code. Please retry.");
-
-        // Add order items and calculate total
-        decimal total = 0;
         foreach (var itemDto in dto.Items)
         {
-            var price = await _orderRepository.GetProductPriceAsync(itemDto.ProductId, cancellationToken);
-            if (price == null)
-                throw new KeyNotFoundException("Product not found during order processing.");
+            // Re-fetch price here (already validated above, so never null)
+            var price = await _orderRepository.GetProductPriceAsync(
+                itemDto.ProductId, cancellationToken)
+                ?? throw new KeyNotFoundException(
+                    "Product not found during order processing.");
 
             var orderItem = new OrderDetail
             {
                 ProductId = itemDto.ProductId,
-                Quantity = itemDto.Quantity,
-                Price = price.Value
+                Quantity  = itemDto.Quantity,
+                Price     = price
             };
 
             order.OrderItems.Add(orderItem);
-            total += (price.Value * itemDto.Quantity);
+            subtotal += price * itemDto.Quantity;
         }
 
-        order.TotalAmount = total;
+        order.TotalAmount = Math.Round(subtotal, 2);
 
-        // Apply discount if provided
+        // ── 6. Apply discount (in-memory, before save) ───────────
         if (!string.IsNullOrWhiteSpace(dto.DiscountCode))
         {
-            await ApplyDiscountAsync(order.Id, dto.DiscountCode, cancellationToken);
+            var discount = await _orderRepository.GetValidDiscountAsync(
+                dto.DiscountCode, order.TotalAmount, cancellationToken);
+
+            if (discount == null)
+                throw new InvalidOperationException(
+                    "Invalid, expired, or inapplicable discount code.");
+
+            var discountAmount = discount.IsPercentage
+                ? Math.Round(order.TotalAmount * discount.DiscountValue / 100m, 2)
+                : discount.DiscountValue;
+
+            // Discount cannot exceed the order total
+            discountAmount = Math.Min(discountAmount, order.TotalAmount);
+
+            order.DiscountId       = discount.Id;
+            order.DiscountAmount   = discountAmount;
+            order.IsDiscountApplied = true;
+            order.TotalAmount      = Math.Round(order.TotalAmount - discountAmount, 2);
+
+            // Increment usage counter on the discount entity
+            discount.TimesUsed++;
         }
 
-        // Persist order
+        // ── 7. Persist everything in one save ────────────────────
         await _orderRepository.AddAsync(order, cancellationToken);
 
         return order.Id;
@@ -109,11 +133,11 @@ public class OrderService : IOrderService
             throw new InvalidOperationException(
                 "Only new or pending orders can be modified.");
 
-        order.Name = dto.Name;
-        order.Email = dto.Email;
+        order.Name       = dto.Name;
+        order.Email      = dto.Email;
         order.ShipAddress = dto.ShipAddress;
-        order.Phone = dto.Phone;
-        order.Note = dto.Note;
+        order.Phone      = dto.Phone;
+        order.Note       = dto.Note;
 
         _context.OrderItems.RemoveRange(order.OrderItems);
         order.OrderItems.Clear();
@@ -124,49 +148,46 @@ public class OrderService : IOrderService
         {
             var product = await _context.Products
                 .FirstOrDefaultAsync(p => p.Id == item.ProductId, cancellationToken)
-                ?? throw new Exception($"Product {item.ProductId} not found");
+                ?? throw new KeyNotFoundException($"Product {item.ProductId} not found.");
 
-            var price = product.Price;
-            subtotal += price * item.Quantity;
+            subtotal += product.Price * item.Quantity;
 
             order.OrderItems.Add(new OrderDetail
             {
-                OrderId = order.Id,
+                OrderId   = order.Id,
                 ProductId = product.Id,
-                Quantity = item.Quantity,
-                Price = price
+                Quantity  = item.Quantity,
+                Price     = product.Price
             });
         }
 
-        order.Discount = null;
+        // Reset discount before potentially re-applying
+        order.Discount       = null;
         order.DiscountAmount = 0;
-
-        decimal discountAmount = 0;
 
         if (!string.IsNullOrWhiteSpace(dto.DiscountCode))
         {
             var discount = await _context.Discounts
                 .FirstOrDefaultAsync(d => d.Code == dto.DiscountCode, cancellationToken);
 
-            if (discount != null &&
-                discount.IsActive &&
+            if (discount is { IsActive: true } &&
                 DateTime.UtcNow >= discount.StartDate &&
                 DateTime.UtcNow <= discount.EndDate &&
                 (!discount.MaxUses.HasValue || discount.TimesUsed < discount.MaxUses) &&
                 (!discount.MinimumOrderAmount.HasValue || subtotal >= discount.MinimumOrderAmount))
             {
-                discountAmount = discount.IsPercentage
-                    ? subtotal * discount.DiscountValue / 100
+                var discountAmount = discount.IsPercentage
+                    ? Math.Round(subtotal * discount.DiscountValue / 100m, 2)
                     : Math.Min(discount.DiscountValue, subtotal);
 
                 discount.TimesUsed++;
-                order.Discount = discount;
+                order.Discount       = discount;
+                order.DiscountAmount = discountAmount;
             }
         }
 
-        order.DiscountAmount = discountAmount;
-        order.TotalAmount = Math.Max(0, subtotal - discountAmount);
-        order.UpdatedAt = DateTime.UtcNow;
+        order.TotalAmount = Math.Max(0, Math.Round(subtotal - order.DiscountAmount, 2));
+        order.UpdatedAt   = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
     }
@@ -178,7 +199,7 @@ public class OrderService : IOrderService
         return await _orderRepository.GetByIdAsync(id, cancellationToken);
     }
 
-    public async Task ChangeStatusAsync(
+   public async Task ChangeStatusAsync(
         Guid orderId,
         OrderStatus newStatus,
         CancellationToken cancellationToken = default)
@@ -186,16 +207,14 @@ public class OrderService : IOrderService
         var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken)
             ?? throw new KeyNotFoundException("Order not found.");
 
-        // Business rule: Cannot change status of deleted order
         if (order.IsDeleted)
             throw new InvalidOperationException("Cannot change status of a cancelled order.");
 
-        // Validate status transition using policy
         if (!OrderStatusTransitionPolicy.CanTransition(order.Status, newStatus))
             throw new InvalidOperationException(
                 $"Invalid status transition from {order.Status} to {newStatus}.");
 
-        order.Status = newStatus;
+        order.Status    = newStatus;
         order.UpdatedAt = DateTime.UtcNow;
 
         await _orderRepository.SaveChangesAsync(cancellationToken);
@@ -208,20 +227,17 @@ public class OrderService : IOrderService
         var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken)
             ?? throw new KeyNotFoundException("Order not found.");
 
-        // Business rule: Cannot cancel already cancelled order
         if (order.IsDeleted)
             throw new InvalidOperationException("Order is already cancelled.");
 
-        // Business rule: Cannot cancel delivered/shipped orders
         if (order.Status == OrderStatus.Delivered || order.Status == OrderStatus.Shipped)
             throw new InvalidOperationException(
                 "Cannot cancel orders that have been shipped or delivered.");
 
-        // Soft delete
-        order.IsDeleted = true;
-        order.Status = OrderStatus.Cancelled;
-        order.DeletedAt = DateTime.UtcNow;
-        order.UpdatedAt = DateTime.UtcNow;
+        order.IsDeleted  = true;
+        order.Status     = OrderStatus.Cancelled;
+        order.DeletedAt  = DateTime.UtcNow;
+        order.UpdatedAt  = DateTime.UtcNow;
 
         await _orderRepository.SaveChangesAsync(cancellationToken);
     }
@@ -233,7 +249,6 @@ public class OrderService : IOrderService
         var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken)
             ?? throw new KeyNotFoundException("Order not found.");
 
-        // Business rule: Only cancelled orders can be permanently deleted
         if (!order.IsDeleted)
             throw new InvalidOperationException(
                 "Only cancelled orders can be permanently deleted. " +
@@ -293,10 +308,19 @@ public class OrderService : IOrderService
     }
 
     // ===== Helper Methods =====
-
-    private static string GenerateOrderCode()
+    private async Task<string> GenerateUniqueOrderCodeAsync(
+        CancellationToken ct,
+        int maxAttempts = 5)
     {
-        var code = Guid.NewGuid().ToString("N")[..10].ToUpper();
-        return $"HD{code}";
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var code = $"HD{Guid.NewGuid():N}"[..12].ToUpper();
+
+            if (!await _orderRepository.ExistsByCodeAsync(code, null, ct))
+                return code;
+        }
+
+        throw new InvalidOperationException(
+            "Failed to generate a unique order code after several attempts. Please retry.");
     }
 }

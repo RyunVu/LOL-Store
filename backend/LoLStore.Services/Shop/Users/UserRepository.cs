@@ -306,6 +306,26 @@ public class UserRepository : IUserRepository
         return await projected.ToPagedListAsync(pagingParams, cancellationToken);
     }
 
+    
+
+    public async Task<List<T>> GetRecentOrdersByUserAsync<T>(
+        Guid userId,
+        int recentDays,
+        Func<IQueryable<Order>, IQueryable<T>> mapper,
+        CancellationToken cancellationToken = default)
+    {
+        var recentDate = DateTime.UtcNow.AddDays(-recentDays);
+
+        var query = _context.Set<Order>()
+            .AsNoTracking()
+            .Where(o => o.UserId == userId && o.OrderDate >= recentDate)
+            .OrderByDescending(o => o.OrderDate);
+
+        var projected = mapper(query);
+
+        return await projected.ToListAsync(cancellationToken);
+    }
+
     public async Task<bool> UpdateUserAsync(
         User user,
         CancellationToken cancellationToken = default)
@@ -348,5 +368,43 @@ public class UserRepository : IUserRepository
         }
 
         return await _context.SaveChangesAsync(cancellationToken) > 0;
+    }
+
+    public async Task<bool> RevokeRefreshTokenAsync(string token, string reason, string? replacedByToken = null, CancellationToken cancellationToken = default)
+    {
+        var entity = await _context.Set<UserRefreshToken>()
+            .FirstOrDefaultAsync(t => t.Token == token, cancellationToken);
+
+        if (entity == null || !entity.IsActive)
+            return false;
+
+        entity.IsRevoked = true;
+        entity.RevokedAt = DateTime.UtcNow;
+        entity.RevokedReason = reason;
+        entity.ReplacedByToken = replacedByToken;
+
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
+    }
+
+    public async Task RevokeAllUserRefreshTokensAsync(Guid userId, string reason, CancellationToken cancellationToken = default)
+    {
+        var activeTokens = await _context.Set<UserRefreshToken>()
+        .Where(t => t.UserId == userId && !t.IsRevoked && t.Expires > DateTime.UtcNow)
+        .ToListAsync(cancellationToken);
+
+        foreach (var token in activeTokens)
+        {
+            token.IsRevoked = true;
+            token.RevokedAt = DateTime.UtcNow;
+            token.RevokedReason = reason;
+        }
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<UserRefreshToken?> GetActiveRefreshTokenByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<UserRefreshToken>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.UserId == userId && !t.IsRevoked && t.Expires > DateTime.UtcNow, cancellationToken);
     }
 }

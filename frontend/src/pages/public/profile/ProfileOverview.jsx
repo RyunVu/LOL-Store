@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ordersApi } from '@/api/orders.api'
+import { usersApi } from '@/api/users.api'
 
 const ORDER_STATUS_STYLES = {
   0: { label: 'Pending',    classes: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30' },
@@ -14,17 +14,19 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function RecentOrdersPreview() {
+function RecentOrdersPreview({ userId }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    ordersApi
-      .getOrdersByUser({ pageNumber: 1, pageSize: 3 })
-      .then((res) => setOrders(res?.items ?? []))
+    if (!userId) return 
+
+    usersApi
+      .getRecentOrders(userId)
+      .then((res) => setOrders(res ?? []))
       .catch(() => setOrders([]))
       .finally(() => setLoading(false))
-  }, [])
+  }, [userId])
 
   if (loading) {
     return (
@@ -148,7 +150,7 @@ export function ProfileOverview({ user, totalOrders, totalSpent, onGoToOrders, o
             View All →
           </button>
         </div>
-        <RecentOrdersPreview />
+        <RecentOrdersPreview userId={user?.id} />
       </div>
     </div>
   )
