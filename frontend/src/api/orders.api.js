@@ -38,16 +38,17 @@ export const ordersApi = {
 
   cancelOrder: async (orderId) => {
     if (!orderId) throw new Error('Order id is required')
-    const { data } = await apiClient.delete(`/orders/${orderId}/cancel`)
+    const { data } = await apiClient.put(`/orders/${orderId}/cancel`)
     return data.result
   },
 
   checkout: async (orderData) => {
-    if (!orderData) throw new Error('Order data is required')
-    const { data } = await apiClient.post('/orders/checkout', orderData)
-    return data.result
-  },
-
+      if (!orderData)                   throw new Error('Order data is required')
+      if (!orderData.detail?.length)    throw new Error('Order must contain at least one item')
+      const { data } = await apiClient.post('/orders/checkout', orderData)
+      return data.result
+    },
+  
   createOrder: async (orderData) => {
     const { data } = await apiClient.post('/orders', orderData)
     return data.result

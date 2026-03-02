@@ -43,9 +43,12 @@ public static class UserEndpoints
             .Produces<ApiResponse<IList<RoleDto>>>();
 
         builder.MapGet("/users/{userId:guid}/orders", GetOrdersByUser)
-            .RequireAuthorization("RequireAdminRole")
+            .RequireAuthorization()
             .Produces<ApiResponse<PaginationResult<OrderDto>>>();
 
+        builder.MapGet("/users/{userId:guid}/orders/recent", GetRecentOrdersByUser)
+            .RequireAuthorization()
+            .Produces<ApiResponse<List<OrderDto>>>();
         #endregion
 
         #region POST
@@ -173,19 +176,31 @@ public static class UserEndpoints
 
         var tokenEntity = await repository.GetRefreshTokenAsync(refreshTokenString, ct);
         if (tokenEntity == null)
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token not found."));
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Invalid refresh token."));
 
-        if (tokenEntity.Expires <= DateTime.UtcNow)
+        // Reuse attack: token exists but already revoked
+        if (tokenEntity.IsRevoked)
         {
-            await repository.DeleteRefreshTokenAsync(refreshTokenString, ct);
+            await repository.RevokeAllUserRefreshTokensAsync(
+                tokenEntity.UserId,
+                "Reuse attack detected — revoked token was presented again",
+                ct);
             context.RemoveRefreshTokenCookie();
-            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Refresh token expired. Please login again."));
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized,
+                "Token reuse detected. All sessions have been invalidated. Please login again."));
+        }
+
+        // Normal expiry
+        if (tokenEntity.IsExpired)
+        {
+            context.RemoveRefreshTokenCookie();
+            return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized,
+                "Refresh token expired. Please login again."));
         }
 
         var user = await repository.GetUserByIdAsync(tokenEntity.UserId, getFull: true, ct);
         if (user == null)
         {
-            await repository.DeleteRefreshTokenAsync(refreshTokenString, ct);
             context.RemoveRefreshTokenCookie();
             return Results.Ok(ApiResponse.Fail(HttpStatusCode.Unauthorized, "Associated user not found."));
         }
@@ -193,8 +208,9 @@ public static class UserEndpoints
         var userDto = mapper.Map<UserDto>(user);
         var jwt = userDto.GenerateJwt(configuration);
 
-        await repository.DeleteRefreshTokenAsync(refreshTokenString, ct);
+        // Rotate: generate new, revoke old (linked via ReplacedByToken)
         var newToken = IdentityManager.GenerateRefreshToken(userDto.Id);
+        await repository.RevokeRefreshTokenAsync(refreshTokenString, "Rotated", newToken.Token, ct);
         await repository.SetRefreshTokenAsync(userDto.Id, newToken, ct);
         context.SetRefreshTokenCookie(newToken);
 
@@ -206,7 +222,6 @@ public static class UserEndpoints
             UserDto = userDto
         }));
     }
-
     private static async Task<IResult> Logout(
         HttpContext context,
         [FromServices] IUserRepository repository,
@@ -216,12 +231,29 @@ public static class UserEndpoints
         if (string.IsNullOrWhiteSpace(refreshToken))
             return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, "No refresh token cookie found."));
 
-        var existing = await repository.GetRefreshTokenAsync(refreshToken, ct);
-        if (existing != null)
-            await repository.DeleteRefreshTokenAsync(refreshToken, ct);
-
+        await repository.RevokeRefreshTokenAsync(refreshToken, "User logged out", null, ct);
         context.RemoveRefreshTokenCookie();
+
         return Results.Ok(ApiResponse.Success("Logged out successfully."));
+    }
+
+    private static async Task<IResult> GetRecentOrdersByUser(
+        [FromRoute] Guid userId,
+        [FromServices] IUserRepository repository,
+        [FromServices] IMapper mapper,
+        CancellationToken ct)
+    {
+        var user = await repository.GetUserByIdAsync(userId, false, ct);
+        if (user == null)
+            return Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
+
+        var recentOrders = await repository.GetRecentOrdersByUserAsync(
+            userId,
+            recentDays: 14,
+            q => q.ProjectToType<OrderDto>(),
+            ct);
+
+        return Results.Ok(ApiResponse.Success(recentOrders));
     }
 
     #endregion
@@ -255,10 +287,18 @@ public static class UserEndpoints
 
         var userDto = mapper.Map<UserDto>(result.AuthenticatedUser);
         var token = userDto.GenerateJwt(configuration);
-        var refreshToken = IdentityManager.GenerateRefreshToken(userDto.Id);
 
-        await repository.SetRefreshTokenAsync(userDto.Id, refreshToken, ct);
-        context.SetRefreshTokenCookie(refreshToken);
+        var existingToken = await repository.GetActiveRefreshTokenByUserIdAsync(userDto.Id, ct);
+        if (existingToken == null)
+        {
+            var newRefreshToken = IdentityManager.GenerateRefreshToken(userDto.Id);
+            await repository.SetRefreshTokenAsync(userDto.Id, newRefreshToken, ct);
+            context.SetRefreshTokenCookie(newRefreshToken);
+        }
+        else
+        {
+            context.SetRefreshTokenCookie(existingToken);
+        }
 
         return Results.Ok(ApiResponse.Success(new AccessTokenModel
         {
@@ -297,6 +337,7 @@ public static class UserEndpoints
             return Results.Ok(ApiResponse.Fail(HttpStatusCode.BadRequest, ex.Message));
         }
     }
+
 
     #endregion
 

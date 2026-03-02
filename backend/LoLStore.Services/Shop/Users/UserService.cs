@@ -24,8 +24,8 @@ public class UserService : IUserService
         {
             UserName = dto.UserName,
             Email = dto.Email,
-            Password = dto.Password,   // hashing is handled inside RegisterAsync
-            Name = dto.UserName        // default Name to UserName, same as repo logic
+            Password = dto.Password,   
+            Name = dto.UserName       
         };
 
         return await _repository.RegisterAsync(user, cancellationToken);
@@ -68,10 +68,14 @@ public class UserService : IUserService
             throw new InvalidOperationException("New password cannot be empty.");
 
         var user = await _repository.GetUserByIdAsync(userId, false, cancellationToken);
-        if (user == null)
-            return false;
+        if (user == null) return false;
 
-        return await _repository.ChangePasswordAsync(user, oldPassword, newPassword, cancellationToken);
+        var changed = await _repository.ChangePasswordAsync(user, oldPassword, newPassword, cancellationToken);
+
+        if (changed)
+            await _repository.RevokeAllUserRefreshTokensAsync(userId, "Password changed", cancellationToken);
+
+        return changed;
     }
 
     public async Task<bool> ResetPasswordAsync(
@@ -86,7 +90,12 @@ public class UserService : IUserService
         if (user == null)
             return false;
 
-        return await _repository.ResetPasswordAsync(user, newPassword, cancellationToken);
+        var reset = await _repository.ResetPasswordAsync(user, newPassword, cancellationToken);
+
+        if (reset)
+            await _repository.RevokeAllUserRefreshTokensAsync(userId, "Password reset by admin", cancellationToken);
+
+        return reset;
     }
 
     public async Task<bool> UpdateRolesAsync(
@@ -112,13 +121,17 @@ public class UserService : IUserService
             throw new InvalidOperationException("Temporary ban requires a valid duration in days.");
 
         var user = await _repository.GetUserByIdAsync(userId, false, cancellationToken);
-        if (user == null)
-            return false;
+        if (user == null) return false;
 
         if (user.IsBanned)
             throw new InvalidOperationException("User is already banned.");
 
-        return await _repository.BanUserAsync(userId, isPermanent, durationDays, reason, cancellationToken);
+        var banned = await _repository.BanUserAsync(userId, isPermanent, durationDays, reason, cancellationToken);
+
+        if (banned)
+            await _repository.RevokeAllUserRefreshTokensAsync(userId, $"User banned: {reason}", cancellationToken);
+
+        return banned;
     }
 
     public async Task<bool> UnbanAsync(

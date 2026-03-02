@@ -30,8 +30,8 @@ public static class OrderEndpoints
             .Produces<ApiResponse<IPagedList<OrderDto>>>();
 
         builder.MapPost("/checkout", CheckOut)
-            .RequireAuthorization()
             .AddEndpointFilter<ValidatorFilter<OrderEditModel>>()
+            .RequireAuthorization()
             .Produces<ApiResponse<OrderDto>>();
 
         builder.MapGet("/{orderId:guid}", GetOrderById)
@@ -47,7 +47,7 @@ public static class OrderEndpoints
         builder.MapPut("/{id:guid}", UpdateOrder)
             .RequireAuthorization("RequireManagerRole");
 
-        builder.MapDelete("/{orderId:guid}/cancel", CancelOrderByUser)
+        builder.MapPut("/{orderId:guid}/cancel", CancelOrderByUser)
             .RequireAuthorization()
             .Produces<ApiResponse<OrderDto>>();
 
@@ -103,9 +103,11 @@ public static class OrderEndpoints
     {
         try
         {
-            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdClaim, out var userId))
+            var user = context.GetCurrentUser();
+            if (user is null)
                 return Results.Unauthorized();
+
+            var userId = user.Id;
 
             var dto = new CreateOrderDto
             {

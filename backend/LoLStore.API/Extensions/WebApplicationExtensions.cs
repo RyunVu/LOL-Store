@@ -84,7 +84,8 @@ public static class WebApplicationExtensions
                 policy
                     .WithOrigins(
                         "http://localhost:3000",
-                        "http://localhost:5173"
+                        "http://localhost:5173",
+                        "http://localhost:5132"
                     )
                     .AllowAnyHeader()
                     .AllowAnyMethod()

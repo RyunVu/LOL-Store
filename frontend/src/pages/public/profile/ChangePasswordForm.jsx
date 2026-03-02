@@ -1,4 +1,5 @@
-import { FormField, inputCls } from '@/components/ui/FormField'
+import { FormField } from '@/components/form/FormField'
+import { inputCls } from '@/components/form/formStyles'
 
 export function ChangePasswordForm({
   pwForm,

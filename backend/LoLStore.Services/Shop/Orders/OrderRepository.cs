@@ -83,7 +83,6 @@ public class OrderRepository : IOrderRepository
     {
         if (query.Status.HasValue && query.Status == OrderStatus.Cancelled)
         {
-            
             var orders = FilterOrders(query)
                 .Where(o => o.UserId == userId);
             return await mapper(orders).ToPagedListAsync(pagingParams, ct);

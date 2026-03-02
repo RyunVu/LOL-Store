@@ -21,16 +21,17 @@ public static class IdentityManager
 
         var claims = identity.Claims.ToList();
 
-        var idValue = claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid)?.Value;
+        var idValue = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        
         if (!Guid.TryParse(idValue, out Guid userId))
             return null;
 
         return new UserDto
         {
             Id = userId,
-            UserName = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
+            UserName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty,
+            Name = claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value ?? string.Empty,
             Email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? string.Empty,
-            Name = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty,
             Roles = identity
                 .FindAll(ClaimTypes.Role)
                 .Select(r => new RoleDto { Name = r.Value })
@@ -53,10 +54,10 @@ public static class IdentityManager
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Sid, user.Id.ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.UserName ?? string.Empty),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), 
+            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
             new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim(ClaimTypes.Name, user.Name ?? string.Empty)
+            new Claim(ClaimTypes.GivenName, user.Name ?? string.Empty)
         };
 
         if (user.Roles != null)

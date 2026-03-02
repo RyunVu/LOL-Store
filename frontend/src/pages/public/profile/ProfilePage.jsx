@@ -69,6 +69,7 @@ export default function ProfilePage() {
     if (activeTab === 'orders') fetchOrders()
   }, [activeTab, fetchOrders])
 
+
   // ── Derived ─────────────────────────────────────────────────────
   const totalOrders = ordersMeta?.totalItemCount ?? orders.length
   const totalSpent  = orders.reduce((s, o) => s + (o.totalAmount || 0), 0)
@@ -153,6 +154,7 @@ export default function ProfilePage() {
       </div>
     )
   }
+
 
   const avatarLetter =
     user?.name?.[0]?.toUpperCase() ||
