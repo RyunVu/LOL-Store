@@ -71,7 +71,10 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
         
         builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+
         builder.Services.AddScoped<ExtraProduct>();
+        
+        builder.Services.AddHostedService<RefreshTokenCleanupService>();
         return builder;
     }
 
