@@ -291,26 +291,3 @@ dotnet run --project backend\LoLStore.API
 # Run frontend
 cd frontend; npm install; npm run dev
 ```
-
-## Next steps and optional improvements
-- Create a `backend/README.md` with developer-specific notes (EF tips, seeding details, where to add indexes like SKU uniqueness).
-- Add `docker-compose.yml` to run SQL Server/MySQL, API, and frontend together for consistent local dev.
-- Move secrets into environment variables or a secrets manager for production.
-
-If you want, I can now:
-- add a `backend/README.md` with EF examples and local connection string templates, or
-- create a `docker-compose.yml` that includes SQL Server + API + frontend for local dev, or
-- update `Product` entity to add data annotations and add a unique index migration for `Sku`.
-
----
-
-If you'd like me to implement one of the optional improvements above, pick one and I will make the changes and run a quick verification build/migration.
-
----
-
-If you'd like, I can:
-- add a short `backend/README.md` with specific EF instructions and a sample `appsettings.Development.json` for local dev, or
-- add a `dotnet user-secrets` example to keep the JWT secret out of source control, or
-- create a Docker Compose file to run the SQL Server + API + frontend together.
-
-Tell me which follow-up you prefer and I will implement it.
