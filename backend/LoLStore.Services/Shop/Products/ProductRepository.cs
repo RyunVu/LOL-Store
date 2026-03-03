@@ -19,6 +19,7 @@ public class ProductRepository : IProductRepository
 
     #region Products - Read Operations
 
+
     private static Expression<Func<Product, bool>> IsPublicVisible()
     {
         return p =>
@@ -462,6 +463,7 @@ public class ProductRepository : IProductRepository
     {
         var products = _context.Set<Product>()
             .AsNoTracking()
+            .AsSplitQuery()
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.Keyword))

@@ -71,8 +71,12 @@ export default function ProfilePage() {
 
 
   // ── Derived ─────────────────────────────────────────────────────
-  const totalOrders = ordersMeta?.totalItemCount ?? orders.length
-  const totalSpent  = orders.reduce((s, o) => s + (o.totalAmount || 0), 0)
+  const activeOrders = orders.filter((o) => o.status !== 6)
+  const cancelledOnPage = orders.filter((o) => o.status === 6).length
+  const totalOrders  = ordersMeta
+    ? Math.max(0, ordersMeta.totalItemCount - cancelledOnPage)
+    : activeOrders.length
+  const totalSpent   = activeOrders.reduce((s, o) => s + (o.totalAmount || 0), 0)
 
   // ── Edit Profile ────────────────────────────────────────────────
   const validateEdit = () => {

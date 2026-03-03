@@ -35,9 +35,11 @@ public static class OrderEndpoints
             .Produces<ApiResponse<OrderDto>>();
 
         builder.MapGet("/{orderId:guid}", GetOrderById)
+            .RequireAuthorization()
             .Produces<ApiResponse<OrderDto>>();
 
-        builder.MapGet("/code/{orderCode}", GetOrderByCode)
+        builder.MapGet("/{orderCode}", GetOrderByCode)
+            .RequireAuthorization()
             .Produces<ApiResponse<OrderDto>>();
 
         builder.MapPut("/{orderId:guid}/status", UpdateOrderStatus)

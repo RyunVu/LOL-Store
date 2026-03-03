@@ -315,15 +315,18 @@ public class UserRepository : IUserRepository
         CancellationToken cancellationToken = default)
     {
         var recentDate = DateTime.UtcNow.AddDays(-recentDays);
+        var cancelledCutoff = DateTime.UtcNow.AddDays(-30);
 
         var query = _context.Set<Order>()
             .AsNoTracking()
             .Where(o => o.UserId == userId && o.OrderDate >= recentDate)
+            // Hide cancelled orders older than 30 days
+            .Where(o =>
+                o.Status != OrderStatus.Cancelled ||
+                o.OrderDate >= cancelledCutoff)
             .OrderByDescending(o => o.OrderDate);
 
-        var projected = mapper(query);
-
-        return await projected.ToListAsync(cancellationToken);
+        return await mapper(query).ToListAsync(cancellationToken);
     }
 
     public async Task<bool> UpdateUserAsync(

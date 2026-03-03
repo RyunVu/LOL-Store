@@ -44,7 +44,10 @@ public class OrderRepository : IOrderRepository
         CancellationToken ct = default)
     {
         return await _context.Orders
-            .AsNoTracking()
+            .Include(o => o.OrderItems)
+            .ThenInclude(od => od.Product)
+            .Include(o => o.Discount)
+            .Include(o => o.User)
             .FirstOrDefaultAsync(
                 o => o.CodeOrder == code,
                 ct);
@@ -81,20 +84,36 @@ public class OrderRepository : IOrderRepository
         Func<IQueryable<Order>, IQueryable<T>> mapper,
         CancellationToken ct = default)
     {
-        if (query.Status.HasValue && query.Status == OrderStatus.Cancelled)
+        var orders = _context.Orders
+            .AsNoTracking()
+            .Where(o => o.UserId == userId);
+
+        if (!query.Status.HasValue || query.Status != OrderStatus.Cancelled)
         {
-            var orders = FilterOrders(query)
-                .Where(o => o.UserId == userId);
-            return await mapper(orders).ToPagedListAsync(pagingParams, ct);
+            var cutoff = DateTime.UtcNow.AddDays(-30);
+            orders = orders.Where(o =>
+                o.Status != OrderStatus.Cancelled ||
+                o.OrderDate >= cutoff);
         }
-        else
-        {
-            
-            query.Status = OrderStatus.Cancelled; 
-            var orders = FilterOrders(query)
-                .Where(o => o.UserId == userId && !o.IsDeleted);
-            return await mapper(orders).ToPagedListAsync(pagingParams, ct);
-        }
+
+        // Apply remaining filters
+        if (query.Status.HasValue)
+            orders = orders.Where(o => o.Status == query.Status);
+
+        if (!string.IsNullOrWhiteSpace(query.Keyword))
+            orders = orders.Where(o =>
+                o.CodeOrder.Contains(query.Keyword) ||
+                o.Name.Contains(query.Keyword) ||
+                o.Email.Contains(query.Keyword));
+
+        if (query.Year.HasValue)
+            orders = orders.Where(o => o.OrderDate.Year == query.Year);
+
+        if (query.Month.HasValue)
+            orders = orders.Where(o => o.OrderDate.Month == query.Month);
+
+        return await mapper(orders.OrderByDescending(o => o.OrderDate))
+            .ToPagedListAsync(pagingParams, ct);
     }
 
     public async Task<OrderDetail?> GetOrderDetailsAsync(Guid id, CancellationToken ct = default){

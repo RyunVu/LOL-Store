@@ -14,6 +14,7 @@ const HomePage = lazy(() => import('@/pages/public/HomePage'))
 const ShopPage = lazy(() => import('@/pages/public/ShopPage'))
 const ProfilePage = lazy(() => import('@/pages/public/profile/ProfilePage'))
 const CartPage = lazy(() => import('@/pages/public/cart/CartPage'))
+const UserOrderDetailPage = lazy(() => import('@/pages/public/profile/UserOrderDetailPage'))
 
 // =====================
 // Auth pages
@@ -119,6 +120,14 @@ export const router = createBrowserRouter([
               </SuspenseWrapper> 
             ),
           },
+          {
+            path: 'orders/:orderCode',
+            element: (
+              <SuspenseWrapper>
+                <UserOrderDetailPage />
+              </SuspenseWrapper>
+            ),
+          }
         ],
       },
 

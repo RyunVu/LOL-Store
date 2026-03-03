@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { usersApi } from '@/api/users.api'
 
 const ORDER_STATUS_STYLES = {
-  0: { label: 'Pending',    classes: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30' },
-  1: { label: 'Processing', classes: 'bg-blue-500/15 text-blue-400 border border-blue-500/30'       },
-  2: { label: 'Shipped',    classes: 'bg-purple-500/15 text-purple-400 border border-purple-500/30' },
-  3: { label: 'Delivered',  classes: 'bg-green-500/15 text-green-400 border border-green-500/30'    },
-  4: { label: 'Cancelled',  classes: 'bg-red-500/15 text-red-400 border border-red-500/30'          },
+  0: { label: 'None',       classes: 'bg-gray-500/15 text-gray-400 border border-gray-500/30'      },
+  1: { label: 'New',        classes: 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30'       },
+  2: { label: 'Pending',    classes: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30' },
+  3: { label: 'Processing', classes: 'bg-blue-500/15 text-blue-400 border border-blue-500/30'       },
+  4: { label: 'Shipped',    classes: 'bg-purple-500/15 text-purple-400 border border-purple-500/30' },
+  5: { label: 'Delivered',  classes: 'bg-green-500/15 text-green-400 border border-green-500/30'    },
+  6: { label: 'Cancelled',  classes: 'bg-red-500/15 text-red-400 border border-red-500/30'          },
 }
 
 function formatDate(d) {

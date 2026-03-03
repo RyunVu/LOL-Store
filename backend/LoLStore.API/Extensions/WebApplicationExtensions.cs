@@ -75,6 +75,10 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<ExtraProduct>();
         
         builder.Services.AddHostedService<RefreshTokenCleanupService>();
+        builder.Services.AddMiniProfiler(options =>
+            options.RouteBasePath = "/profiler"
+            ).AddEntityFramework();
+
         return builder;
     }
 

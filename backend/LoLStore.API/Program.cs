@@ -66,6 +66,8 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseMiniProfiler();
+
 app.UseMiddleware<StatusCodeResponseMiddleware>();
 
 app.MapCategoriesEndpoint();

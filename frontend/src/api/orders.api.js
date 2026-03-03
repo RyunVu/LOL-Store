@@ -19,7 +19,7 @@ export const ordersApi = {
 
   getOrderByCode: async (orderCode) => {
     if (!orderCode) throw new Error('Order code is required')
-    const { data } = await apiClient.get(`/orders/code/${orderCode}`)
+    const { data } = await apiClient.get(`/orders/${orderCode}`)
     return data.result
   },
 
