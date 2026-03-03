@@ -231,4 +231,44 @@ public class CategoryRepository : ICategoryRepository
             .FirstOrDefaultAsync(c => c.UrlSlug == slug, ct);
     }
 
+    public async Task DeactivateProductsInCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default)
+    {
+        var products = await _context.Products
+            .Where(p => !p.IsDeleted &&
+                        p.IsActive &&
+                        p.Categories.Any(c => c.Id == categoryId))
+            .ToListAsync(cancellationToken);
+
+        foreach (var product in products)
+        {
+            product.IsActive = false;
+            product.WasActiveBeforeCategoryDeactivation = true;
+            product.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RestoreProductsInCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default)
+    {
+        var products = await _context.Products
+            .Where(p => !p.IsDeleted &&
+                        !p.IsActive &&
+                        p.WasActiveBeforeCategoryDeactivation &&
+                        p.Categories.Any(c => c.Id == categoryId))
+            .ToListAsync(cancellationToken);
+
+        foreach (var product in products)
+        {
+            product.IsActive = true;
+            product.WasActiveBeforeCategoryDeactivation = false;
+            product.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

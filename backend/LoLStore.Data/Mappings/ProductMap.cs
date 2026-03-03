@@ -45,7 +45,11 @@ public class ProductMap : IEntityTypeConfiguration<Product>
 		builder.Property(p => p.IsActive)
 			.IsRequired()
 			.HasDefaultValue(false);
-
+		
+		builder.Property(p => p.WasActiveBeforeCategoryDeactivation)
+			.IsRequired()
+		    .HasDefaultValue(false);
+		
 		builder.Property(s => s.Note)
 			.HasMaxLength(2048)
 			.HasDefaultValue("");

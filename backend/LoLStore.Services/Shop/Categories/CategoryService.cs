@@ -115,18 +115,20 @@ public class CategoryService : ICategoryService
         CancellationToken cancellationToken = default)
     {
         var category = await _categoryRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new KeyNotFoundException("Category not found.");
+        ?? throw new KeyNotFoundException("Category not found.");
 
-        // Business rule: cannot activate/deactivate a deleted category
         if (category.IsDeleted)
-        {
             throw new InvalidOperationException(
                 "Cannot change active state of a deleted category.");
-        }
 
         category.IsActive = !category.IsActive;
         category.UpdatedAt = DateTime.UtcNow;
 
         await _categoryRepository.SaveChangesAsync(cancellationToken);
+
+        if (category.IsActive)
+            await _categoryRepository.RestoreProductsInCategoryAsync(id, cancellationToken);
+        else
+            await _categoryRepository.DeactivateProductsInCategoryAsync(id, cancellationToken);
     }
 }

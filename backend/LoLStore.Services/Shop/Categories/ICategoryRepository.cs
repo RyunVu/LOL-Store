@@ -33,6 +33,8 @@ public interface ICategoryRepository
     Task AddAsync(Category category, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<bool> DeletePermanentlyAsync(Guid id, CancellationToken ct = default);
+    Task DeactivateProductsInCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default);
+    Task RestoreProductsInCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default);
 
     // ===== Validation =====
     Task<bool> ExistsBySlugAsync(string slug, Guid? excludeId, CancellationToken ct = default);

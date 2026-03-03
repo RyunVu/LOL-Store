@@ -21,6 +21,7 @@ public class Product : BaseEntity
     public string Note { get; set; } = string.Empty;
     
     public bool IsActive { get; set; }
+    public bool WasActiveBeforeCategoryDeactivation { get; set; } = false;
     public Guid SupplierId { get; set; }
     public int CountOrder { get; set; }
 
