@@ -2,21 +2,19 @@ using LoLStore.Core.Contracts;
 
 namespace LoLStore.Core.Entities;
 
-public class Feedback
+public class Feedback : BaseEntity
 {
-    public Guid Id { get; set; }
     public Guid ProductId { get; set; }
     
     // Required fields
     public string UserName { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
-    
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public int Rating { get; set; }
-
+    public bool IsHidden { get; set; } = false;
     // Navigation properties
     public Product Product { get; set; } = null!;
     public ICollection<FeedbackPicture> Pictures { get; set; } = new List<FeedbackPicture>();
+    public ICollection<FeedbackReport> Reports { get; set; } = new List<FeedbackReport>();
 }
 
 public class FeedbackPicture

@@ -25,6 +25,10 @@ public class FeedbackMap : IEntityTypeConfiguration<Feedback>
 
         builder.Property(f => f.Rating)
             .IsRequired();
+            
+        builder.Property(f => f.IsHidden)
+            .IsRequired()
+            .HasDefaultValue(false);
 
         builder
             .HasOne(f => f.Product)
