@@ -54,6 +54,10 @@ const UserPage = lazy(() => import('@/pages/admin/users/UserManagePage'))
 const UserDetailPage = lazy(() => import('@/pages/admin/users/UserDetailPage'))
 const UserEditPage = lazy(() => import('@/pages/admin/users/UserEditPage'))
 
+// Feedbacks
+const FeedbackManagePage = lazy(() => import('@/pages/admin/feedbacks/FeedbackManagePage'))
+const FeedbackReportsPage = lazy(() => import('@/pages/admin/feedbacks/FeedbackReportsPage'))
+
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -275,6 +279,24 @@ export const router = createBrowserRouter([
             element: (
               <SuspenseWrapper>
                 <UserEditPage />
+              </SuspenseWrapper>
+            ),
+          },
+
+          // Feedbacks
+          {
+            path: 'feedbacks',
+            element: (
+              <SuspenseWrapper>
+                <FeedbackManagePage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'feedbacks/reports',
+            element: (
+              <SuspenseWrapper>
+                <FeedbackReportsPage />
               </SuspenseWrapper>
             ),
           },

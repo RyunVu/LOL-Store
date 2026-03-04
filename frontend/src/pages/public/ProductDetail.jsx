@@ -71,7 +71,7 @@ const ProductDetail = () => {
           <ProductHeader product={product} />
           <ProductTabs 
             description={product.description}
-            categories={product.categories}
+            productId={product.id}
           />
         </div>
       </div>

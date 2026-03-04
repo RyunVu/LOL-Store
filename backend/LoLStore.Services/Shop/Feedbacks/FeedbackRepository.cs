@@ -37,8 +37,8 @@ public class FeedbackRepository : IFeedbackRepository
     {
         var feedbacks = _context.Set<Feedback>()
             .AsNoTracking()
+            .Include(f => f.Pictures) 
             .Where(f => f.ProductId == productId && !f.IsHidden)
-            .Include(f => f.Pictures)
             .OrderByDescending(f => f.CreatedAt);
 
         return mapper(feedbacks).ToPagedListAsync(pagingParams, cancellationToken);

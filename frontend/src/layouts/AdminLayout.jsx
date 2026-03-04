@@ -55,6 +55,8 @@ export default function AdminLayout() {
     { path: '/admin/orders', label: 'Orders', icon: 'bxs-cart' },
     { path: '/admin/discounts', label: 'Discounts', icon: 'bxs-offer' },
     { path: '/admin/users', label: 'Users', icon: 'bxs-group' },
+    { path: '/admin/feedbacks', label: 'Feedbacks', icon: 'bxs-star' },  
+    { path: '/admin/feedbacks/reports', label: 'Reports', icon: 'bxs-flag' },
   ]
 
   const bottomMenuItems = [

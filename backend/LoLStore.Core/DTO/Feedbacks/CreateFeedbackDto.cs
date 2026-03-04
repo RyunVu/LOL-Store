@@ -6,5 +6,5 @@ public class CreateFeedbackDto
     public string UserName { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public int Rating { get; set; }
-    public IList<string> PicturePaths { get; set; } = new List<string>();
+    public IList<string> PictureUrls { get; set; } = new List<string>();
 }

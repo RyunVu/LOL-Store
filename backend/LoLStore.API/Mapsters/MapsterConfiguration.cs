@@ -285,7 +285,11 @@ public class MapsterConfiguration : IRegister
             .Map(dest => dest.FeedbackContent,
                 src => src.Feedback != null ? src.Feedback.Content : string.Empty)
             .Map(dest => dest.FeedbackUserName,
-                src => src.Feedback != null ? src.Feedback.UserName : string.Empty);
+                src => src.Feedback != null ? src.Feedback.UserName : string.Empty)          
+            .Map(dest => dest.FeedbackPictureUrls,
+                src => src.Feedback != null && src.Feedback.Pictures != null
+                    ? src.Feedback.Pictures.Select(p => p.Path).ToList()
+                    : new List<string>());
 
         config.NewConfig<FeedbackEditModel, CreateFeedbackDto>();
 
@@ -303,5 +307,6 @@ public class MapsterConfiguration : IRegister
         config.NewConfig<FeedbackFilterModel, FeedbackQuery>();
 
         config.NewConfig<FeedbackReportFilterModel, FeedbackReportQuery>();
+
     }
 }

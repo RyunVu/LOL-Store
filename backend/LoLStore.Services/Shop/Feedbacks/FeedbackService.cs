@@ -26,7 +26,7 @@ public class FeedbackService : IFeedbackService
             UserName = dto.UserName,
             Content = dto.Content,
             Rating = dto.Rating,
-            Pictures = dto.PicturePaths.Select(url => new FeedbackPicture
+            Pictures = dto.PictureUrls.Select(url => new FeedbackPicture
             {
                 Id = Guid.NewGuid(),
                 Path = url
