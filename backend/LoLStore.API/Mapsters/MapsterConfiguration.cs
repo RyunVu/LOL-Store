@@ -1,5 +1,6 @@
 using LoLStore.API.Models.CategoryModel;
 using LoLStore.API.Models.DiscountModel;
+using LoLStore.API.Models.FeedbackModel;
 using LoLStore.API.Models.OrderModel;
 using LoLStore.API.Models.PictureModel;
 using LoLStore.API.Models.ProductHistoryModel;
@@ -10,6 +11,7 @@ using LoLStore.Core.Constants;
 using LoLStore.Core.DTO;
 using LoLStore.Core.DTO.Categories;
 using LoLStore.Core.DTO.Discounts;
+using LoLStore.Core.DTO.Feedbacks;
 using LoLStore.Core.DTO.Orders;
 using LoLStore.Core.DTO.Products;
 using LoLStore.Core.DTO.Users;
@@ -258,6 +260,48 @@ public class MapsterConfiguration : IRegister
             .Ignore(dest => dest.IsDeleted)
             .Ignore(dest => dest.TimesUsed) 
             .Ignore(dest => dest.UpdatedAt!)
-            .Ignore(dest => dest.DeletedAt!);       
+            .Ignore(dest => dest.DeletedAt!);      
+
+        // ===================================================================
+        // FEEDBACK MAPPINGS
+        // ===================================================================
+
+        config.NewConfig<Feedback, FeedbackDto>()
+            .Map(dest => dest.PictureUrls,
+                src => src.Pictures == null
+                    ? new List<string>()
+                    : src.Pictures.Select(p => p.Path).ToList());
+
+        config.NewConfig<Feedback, FeedbackAdminDto>()
+            .Inherits<Feedback, FeedbackDto>()
+            .Map(dest => dest.ReportCount,
+                src => src.Reports == null ? 0 : src.Reports.Count)
+            .Map(dest => dest.PendingReportCount,
+                src => src.Reports == null
+                    ? 0
+                    : src.Reports.Count(r => r.Status == FeedbackReportStatus.Pending));
+
+        config.NewConfig<FeedbackReport, FeedbackReportDto>()
+            .Map(dest => dest.FeedbackContent,
+                src => src.Feedback != null ? src.Feedback.Content : string.Empty)
+            .Map(dest => dest.FeedbackUserName,
+                src => src.Feedback != null ? src.Feedback.UserName : string.Empty);
+
+        config.NewConfig<FeedbackEditModel, CreateFeedbackDto>();
+
+        config.NewConfig<(Guid id, FeedbackReportEditModel model), CreateFeedbackReportDto>()
+            .Map(dest => dest.FeedbackId, src => src.id)
+            .Map(dest => dest.ReporterName, src => src.model.ReporterName)
+            .Map(dest => dest.Reason, src => src.model.Reason);
+
+        config.NewConfig<(Guid id, ReviewReportEditModel model), ReviewFeedbackReportDto>()
+            .Map(dest => dest.ReportId, src => src.id)
+            .Map(dest => dest.Status, src => src.model.Status)
+            .Map(dest => dest.AdminNote, src => src.model.AdminNote)
+            .Map(dest => dest.HideFeedback, src => src.model.HideFeedback);
+
+        config.NewConfig<FeedbackFilterModel, FeedbackQuery>();
+
+        config.NewConfig<FeedbackReportFilterModel, FeedbackReportQuery>();
     }
 }

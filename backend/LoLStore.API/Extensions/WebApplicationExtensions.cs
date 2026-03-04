@@ -7,6 +7,7 @@ using LoLStore.Data.Seeders;
 using LoLStore.Services.Shop;
 using LoLStore.Services.Shop.Categories;
 using LoLStore.Services.Shop.Discounts;
+using LoLStore.Services.Shop.Feedbacks;
 using LoLStore.Services.Shop.Orders;
 using LoLStore.Services.Shop.Products;
 using LoLStore.Services.Shop.Users;
@@ -67,6 +68,9 @@ public static class WebApplicationExtensions
         
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IUserService, UserService>();
+
+        builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+        builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 
         builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
         

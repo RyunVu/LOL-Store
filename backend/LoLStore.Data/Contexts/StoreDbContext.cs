@@ -11,6 +11,8 @@ public class StoreDbContext : DbContext
     public DbSet<Picture> Pictures { get; set; }
     public DbSet<ProductHistory> ProductHistories { get; set; }
     public DbSet<Feedback> Feedbacks { get; set; }
+    public DbSet<FeedbackReport> FeedbackReports { get; set; }
+    public DbSet<FeedbackPicture> FeedbackPictures { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderDetail> OrderItems { get; set; }
     public DbSet<Discount> Discounts { get; set; }
