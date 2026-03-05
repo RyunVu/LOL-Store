@@ -176,7 +176,7 @@ public class FeedbackRepository : IFeedbackRepository
             .WhereIf(query.IsHidden.HasValue,
                 f => f.IsHidden == query.IsHidden!.Value);
 
-        if (query.HasReports)
+        if (query.HasReports == true)
             feedbacks = feedbacks.Where(f => f.Reports.Any());
 
         return feedbacks.OrderByDescending(f => f.CreatedAt);

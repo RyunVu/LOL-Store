@@ -9,7 +9,7 @@ public class FeedbackQuery
     public int? MinRating { get; set; }
     public int? MaxRating { get; set; }
     public bool? IsHidden { get; set; }
-    public bool HasReports { get; set; } = false;
+    public bool? HasReports { get; set; }
 }
 
 public class FeedbackReportQuery

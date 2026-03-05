@@ -54,9 +54,9 @@ const UserPage = lazy(() => import('@/pages/admin/users/UserManagePage'))
 const UserDetailPage = lazy(() => import('@/pages/admin/users/UserDetailPage'))
 const UserEditPage = lazy(() => import('@/pages/admin/users/UserEditPage'))
 
-// Feedbacks
+// Feedbacks + Reports
 const FeedbackManagePage = lazy(() => import('@/pages/admin/feedbacks/FeedbackManagePage'))
-const FeedbackReportsPage = lazy(() => import('@/pages/admin/feedbacks/FeedbackReportsPage'))
+const FeedbackReportsPage = lazy(() => import('@/pages/admin/feedbackReports/FeedbackReportsPage'))
 
 export const router = createBrowserRouter([
   {
