@@ -35,7 +35,7 @@ public static class OrderEndpoints
             .Produces<ApiResponse<OrderDto>>();
 
         builder.MapGet("/{orderId:guid}", GetOrderById)
-            .RequireAuthorization()
+            .RequireAuthorization() 
             .Produces<ApiResponse<OrderDto>>();
 
         builder.MapGet("/{orderCode}", GetOrderByCode)
@@ -150,13 +150,22 @@ public static class OrderEndpoints
 
     private static async Task<IResult> GetOrderById(
         [FromRoute] Guid orderId,
+        HttpContext context,                   
         [FromServices] IOrderRepository repository,
         [FromServices] IMapper mapper)
     {
+        var user = context.GetCurrentUser();
+        if (user is null)
+            return Results.Unauthorized();
+
         var order = await repository.GetByIdWithDetailsAsync(orderId);
         if (order is null)
             return Results.NotFound(
                 ApiResponse.Fail(HttpStatusCode.NotFound, "Order was not found."));
+
+        var isPrivileged = context.User.IsInRole("Admin") || context.User.IsInRole("Manager");
+        if (order.UserId != user.Id && !isPrivileged)
+            return Results.Forbid();
 
         return Results.Ok(
             ApiResponse.Success(mapper.Map<OrderDto>(order)));
@@ -164,13 +173,22 @@ public static class OrderEndpoints
 
     private static async Task<IResult> GetOrderByCode(
         [FromRoute] string orderCode,
+        HttpContext context,              
         [FromServices] IOrderRepository repository,
         [FromServices] IMapper mapper)
     {
+        var user = context.GetCurrentUser();
+        if (user is null)
+            return Results.Unauthorized();
+
         var order = await repository.GetByCodeAsync(orderCode);
         if (order is null)
             return Results.NotFound(
                 ApiResponse.Fail(HttpStatusCode.NotFound, "Order was not found."));
+
+        var isPrivileged = context.User.IsInRole("Admin") || context.User.IsInRole("Manager");
+        if (order.UserId != user.Id && !isPrivileged)
+            return Results.Forbid();
 
         return Results.Ok(
             ApiResponse.Success(mapper.Map<OrderDto>(order)));

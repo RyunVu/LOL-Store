@@ -146,10 +146,19 @@ public static class UserEndpoints
     private static async Task<IResult> GetOrdersByUser(
         [FromRoute] Guid userId,
         [AsParameters] PagingModel pagingParams,
+        HttpContext context,                    
         [FromServices] IUserRepository repository,
         [FromServices] IMapper mapper,
         CancellationToken ct)
     {
+        var currentUser = context.GetCurrentUser();
+        if (currentUser is null)
+            return Results.Unauthorized();
+
+        var isPrivileged = context.User.IsInRole("Admin") || context.User.IsInRole("Manager");
+        if (currentUser.Id != userId && !isPrivileged)
+            return Results.Forbid();
+
         var user = await repository.GetUserByIdAsync(userId, false, ct);
         if (user == null)
             return Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
@@ -239,10 +248,19 @@ public static class UserEndpoints
 
     private static async Task<IResult> GetRecentOrdersByUser(
         [FromRoute] Guid userId,
+        HttpContext context,                        // 👈 add
         [FromServices] IUserRepository repository,
         [FromServices] IMapper mapper,
         CancellationToken ct)
     {
+        var currentUser = context.GetCurrentUser();
+        if (currentUser is null)
+            return Results.Unauthorized();
+
+        var isPrivileged = context.User.IsInRole("Admin") || context.User.IsInRole("Manager");
+        if (currentUser.Id != userId || !isPrivileged)
+            return Results.Forbid();
+
         var user = await repository.GetUserByIdAsync(userId, false, ct);
         if (user == null)
             return Results.NotFound(ApiResponse.Fail(HttpStatusCode.NotFound, "User not found."));
