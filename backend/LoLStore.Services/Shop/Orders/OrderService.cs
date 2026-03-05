@@ -1,7 +1,7 @@
+using LoLStore.Core.Constants;
 using LoLStore.Core.DTO.Orders;
 using LoLStore.Core.Entities;
 using LoLStore.Data.Contexts;
-using LoLStore.Services.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace LoLStore.Services.Shop.Orders;
@@ -305,6 +305,23 @@ public class OrderService : IOrderService
         order.UpdatedAt = DateTime.UtcNow;
 
         await _orderRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> MarkOrderAsPaidAsync(
+        Guid orderId,
+        string transactionId,
+        CancellationToken ct = default)
+    {
+        var order = await _orderRepository.GetByIdAsync(orderId, ct);
+        if (order == null) return false;
+
+        order.Status = OrderStatus.Paid;            
+        order.TransactionId = transactionId;     
+        order.PaymentMethod = "VNPay";      
+        order.PaidAt        = DateTime.UtcNow; 
+        order.UpdatedAt = DateTime.UtcNow;
+
+        return await _orderRepository.UpdateOrderAsync(order, ct);
     }
 
     // ===== Helper Methods =====

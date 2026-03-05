@@ -27,6 +27,12 @@ public class OrderDto
 
     public decimal TotalAmount  { get; set; }
 
+    public string? TransactionId { get; set; }
+
+    public string? PaymentMethod { get; set; }
+	
+    public DateTime? PaidAt { get; set; }
+
     public DiscountDto? Discount { get; set; }
 
 	public IList<OrderDetailDto> OrderItems { get; set; } = new List<OrderDetailDto>();

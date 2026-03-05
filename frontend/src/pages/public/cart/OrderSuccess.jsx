@@ -1,6 +1,22 @@
+import { paymentApi } from '@/api/payment.api'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 export function OrderSuccess({ placedOrder }) {
+  const [paying, setPaying] = useState(false)
+
+  const handleRetryPayment = async () => {
+    setPaying(true)
+    try {
+      const url = await paymentApi.createVnpayUrl(placedOrder.id)
+      window.location.href = url
+    } catch {
+      alert('Could not initiate payment. Please try from your orders page.')
+    } finally {
+      setPaying(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center px-4">
       <div className="text-center max-w-sm w-full py-20">
@@ -13,8 +29,10 @@ export function OrderSuccess({ placedOrder }) {
         <p className="text-text-secondary-light dark:text-text-secondary-dark">
           Thank you for your purchase.
         </p>
+
+        {/* Order code — standalone block */}
         {placedOrder?.codeOrder && (
-          <div className="inline-block mt-5 mb-8 px-6 py-3 bg-gray-100 dark:bg-dark-800 rounded-2xl">
+          <div className="inline-block mt-5 mb-4 px-6 py-3 bg-gray-100 dark:bg-dark-800 rounded-2xl">
             <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark mb-1 uppercase tracking-wider">
               Order Code
             </p>
@@ -23,6 +41,21 @@ export function OrderSuccess({ placedOrder }) {
             </p>
           </div>
         )}
+
+        {/* VNPay retry button — separate conditional */}
+        {placedOrder?.paymentMethod === null && (
+          <div className="mb-6">
+            <button
+              onClick={handleRetryPayment}
+              disabled={paying}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold text-sm transition-colors"
+            >
+              {paying ? 'Redirecting...' : '🏦 Complete Payment with VNPay'}
+            </button>
+          </div>
+        )}
+
+        {/* Navigation buttons — always shown */}
         <div className="flex gap-3 justify-center">
           <Link
             to="/profile?tab=orders"

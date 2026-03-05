@@ -78,5 +78,6 @@ app.MapOrdersEndpoint();
 app.MapDiscountEndpoint();
 app.MapDashboardEndpoint();
 app.MapFeedbackEndpoint();
+app.MapPaymentEndpoint();
 
 app.Run();

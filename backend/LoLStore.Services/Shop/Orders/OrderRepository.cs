@@ -148,6 +148,14 @@ public class OrderRepository : IOrderRepository
             .ExecuteDeleteAsync(ct) > 0;
     }
 
+    public async Task<bool> UpdateOrderAsync(
+        Order order,
+        CancellationToken ct = default)
+    {
+        _context.Orders.Update(order);
+        return await _context.SaveChangesAsync(ct) > 0;
+    }
+
     // =======================
     // Validation Helpers
     // =======================

@@ -58,6 +58,9 @@ const UserEditPage = lazy(() => import('@/pages/admin/users/UserEditPage'))
 const FeedbackManagePage = lazy(() => import('@/pages/admin/feedbacks/FeedbackManagePage'))
 const FeedbackReportsPage = lazy(() => import('@/pages/admin/feedbackReports/FeedbackReportsPage'))
 
+// Payment 
+const PaymentResultPage = lazy(() => import('@/pages/public/PaymentResultPage'))
+
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -131,6 +134,14 @@ export const router = createBrowserRouter([
                 <UserOrderDetailPage />
               </SuspenseWrapper>
             ),
+          },
+          {
+            path: 'payment/result',
+            element: (
+              <SuspenseWrapper>
+                <PaymentResultPage />
+              </SuspenseWrapper>
+            )
           }
         ],
       },

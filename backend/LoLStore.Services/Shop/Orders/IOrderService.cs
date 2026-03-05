@@ -12,4 +12,6 @@ public interface IOrderService
     Task CancelAsync(Guid orderId, CancellationToken cancellationToken = default);
     Task DeletePermanentlyAsync(Guid orderId, CancellationToken cancellationToken = default);
     Task ApplyDiscountAsync(Guid orderId, string discountCode, CancellationToken cancellationToken = default);
+    
+    Task<bool> MarkOrderAsPaidAsync(Guid orderId, string transactionId, CancellationToken ct = default);
 }

@@ -1,6 +1,6 @@
 using LoLStore.Core.Entities;
 
-namespace LoLStore.Services.Extensions;
+namespace LoLStore.Core.Constants;
 
 public static class OrderStatusTransitionPolicy
 {
@@ -8,27 +8,25 @@ public static class OrderStatusTransitionPolicy
         new Dictionary<OrderStatus, IReadOnlySet<OrderStatus>>
         {
             [OrderStatus.None]       = new HashSet<OrderStatus> { OrderStatus.New },
-            [OrderStatus.New]        = new HashSet<OrderStatus> { OrderStatus.Pending, OrderStatus.Cancelled },
-            [OrderStatus.Pending]    = new HashSet<OrderStatus> { OrderStatus.Processing, OrderStatus.Cancelled },
+            [OrderStatus.New]        = new HashSet<OrderStatus> { OrderStatus.Pending, OrderStatus.Cancelled, OrderStatus.Paid }, 
+            [OrderStatus.Pending]    = new HashSet<OrderStatus> { OrderStatus.Processing, OrderStatus.Cancelled, OrderStatus.Paid }, 
             [OrderStatus.Processing] = new HashSet<OrderStatus> { OrderStatus.Shipped, OrderStatus.Cancelled },
             [OrderStatus.Shipped]    = new HashSet<OrderStatus> { OrderStatus.Delivered },
             [OrderStatus.Delivered]  = new HashSet<OrderStatus>(),
-            [OrderStatus.Cancelled]  = new HashSet<OrderStatus>()
+            [OrderStatus.Cancelled]  = new HashSet<OrderStatus>(),
+            [OrderStatus.Paid]       = new HashSet<OrderStatus> { OrderStatus.Processing }
         };
 
     public static bool CanTransition(OrderStatus from, OrderStatus to)
     {
-        if (from == to)
-            return false;
-
+        if (from == to) return false;
         return AllowedTransitions.TryGetValue(from, out var allowed)
                && allowed.Contains(to);
     }
 
-    public static IReadOnlyCollection<OrderStatus> GetAllowedNextStatuses(
-        OrderStatus currentStatus)
+    public static IReadOnlyCollection<OrderStatus> GetAllowedNextStatuses(OrderStatus current)
     {
-        return AllowedTransitions.TryGetValue(currentStatus, out var allowed)
+        return AllowedTransitions.TryGetValue(current, out var allowed)
             ? allowed.ToArray()
             : Array.Empty<OrderStatus>();
     }

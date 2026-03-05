@@ -48,6 +48,17 @@ public class OrderMap : IEntityTypeConfiguration<Order>
             .IsRequired()
             .HasDefaultValue(false);
 
+        builder.Property(o => o.TransactionId)
+            .HasMaxLength(64)
+            .IsRequired(false);
+
+        builder.Property(o => o.PaymentMethod)
+            .HasMaxLength(32)
+            .IsRequired(false);
+
+        builder.Property(o => o.PaidAt)
+            .IsRequired(false);
+
         // Order details
         builder.HasMany(o => o.OrderItems)
             .WithOne(d => d.Order)

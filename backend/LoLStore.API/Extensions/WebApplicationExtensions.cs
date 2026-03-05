@@ -2,8 +2,10 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using LoLStore.API.Media;
+using LoLStore.Core.Payment;
 using LoLStore.Data.Contexts;
 using LoLStore.Data.Seeders;
+using LoLStore.Services.Payment;
 using LoLStore.Services.Shop;
 using LoLStore.Services.Shop.Categories;
 using LoLStore.Services.Shop.Discounts;
@@ -79,10 +81,14 @@ public static class WebApplicationExtensions
         builder.Services.AddScoped<ExtraProduct>();
         
         builder.Services.AddHostedService<RefreshTokenCleanupService>();
+
         builder.Services.AddMiniProfiler(options =>
             options.RouteBasePath = "/profiler"
             ).AddEntityFramework();
 
+        builder.Services.Configure<VnpayOptions>(
+            builder.Configuration.GetSection("Vnpay"));
+        builder.Services.AddScoped<IVnpayService, VnpayService>();
         return builder;
     }
 

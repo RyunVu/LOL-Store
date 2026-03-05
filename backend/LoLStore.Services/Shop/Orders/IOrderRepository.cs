@@ -31,6 +31,7 @@ public interface IOrderRepository
 
     Task<OrderDetail?> GetOrderDetailsAsync(Guid id, CancellationToken ct = default);
 
+
     // ===== Write (COMMAND) =====
 
     Task AddAsync(Order order, CancellationToken ct = default);
@@ -38,7 +39,7 @@ public interface IOrderRepository
     Task SaveChangesAsync(CancellationToken ct = default);
 
     Task<bool> DeletePermanentlyAsync(Guid id, CancellationToken ct = default);
-
+    Task<bool> UpdateOrderAsync(Order order, CancellationToken ct = default);
     // ===== Validation Helpers =====
 
     Task<bool> ExistsByCodeAsync(string code, Guid? excludeId, CancellationToken ct = default);

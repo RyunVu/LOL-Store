@@ -172,7 +172,10 @@ public class MapsterConfiguration : IRegister
             .Map(dest => dest.DiscountAmount, src => src.DiscountAmount)
             .Map(dest => dest.TotalAmount, src => src.TotalAmount)
             .Map(dest => dest.Discount, src => src.Discount)
-            .Map(dest => dest.OrderItems, src => src.OrderItems);
+            .Map(dest => dest.OrderItems, src => src.OrderItems)
+            .Map(dest => dest.TransactionId, src => src.TransactionId) 
+            .Map(dest => dest.PaymentMethod, src => src.PaymentMethod) 
+            .Map(dest => dest.PaidAt, src => src.PaidAt);    
 
         config.NewConfig<Order, OrderAdminDto>()
             .Inherits<Order, OrderDto>();

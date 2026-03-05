@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { useCartStore } from '@/stores/useCartStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { ordersApi } from '@/api/orders.api'
+import { paymentApi } from '../../../api/payment.api'
 
 import { CartSkeleton }    from './CartSkeleton'
 import { CartItemList }    from './CartItemList'
@@ -46,6 +47,7 @@ export default function CartPage() {
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuthStore()
   const { items, removeItem, updateQuantity, clearCart, getSubtotal, getItemPrice } = useCartStore()
+  const [paymentMethod, setPaymentMethod] = useState('')
 
   // Hydration guard
   const [hydrated, setHydrated] = useState(false)
@@ -173,8 +175,14 @@ export default function CartPage() {
       return
     }
 
+    if (!paymentMethod) {
+      toast.error('Please select a payment method.')
+      return
+    }
+
     setCheckoutLoading(true)
     try {
+      // Step 1: always create the order first
       const placed = await ordersApi.checkout({
         name:         form.name.trim(),
         email:        form.email.trim(),
@@ -184,11 +192,27 @@ export default function CartPage() {
         discountCode: discountCode     || null,
         detail:       items.map((i) => ({ id: i.id, quantity: i.quantity })),
       })
-      setPlacedOrder(placed)
-      
+
       clearCart()
-      toast.success('Order placed successfully!')
-      setStep(STEP.SUCCESS)
+
+      // Step 2: branch by payment method
+      if (paymentMethod === 'vnpay') {
+        try {
+          const paymentUrl = await paymentApi.createVnpayUrl(placed.id)
+          window.location.href = paymentUrl  // redirect to VNPay
+        } catch {
+          // Order created but payment URL failed — still show success
+          // so user can pay later from their order history
+          toast.warning('Order placed but could not initiate payment. You can retry from your orders.')
+          setPlacedOrder(placed)
+          setStep(STEP.SUCCESS)
+        }
+      } else {
+        // COD
+        toast.success('Order placed successfully!')
+        setPlacedOrder(placed)
+        setStep(STEP.SUCCESS)
+      }
     } catch (err) {
       toast.error(err.response?.data?.message ?? 'Failed to place order. Please try again.')
     } finally {
@@ -286,6 +310,8 @@ export default function CartPage() {
                 total={total}
                 onBack={() => setStep(STEP.CART)}
                 onSubmit={handleCheckout}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
               />
             )}
           </div>

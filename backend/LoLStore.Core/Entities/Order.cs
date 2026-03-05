@@ -11,7 +11,8 @@ public enum OrderStatus
     Processing,
     Shipped,
     Delivered,
-    Cancelled
+    Cancelled,
+    Paid
 }
 
 public class Order : BaseEntity
@@ -33,6 +34,10 @@ public class Order : BaseEntity
     public bool IsDiscountApplied { get; set; }
     public decimal TotalAmount { get; set; }
 
+    public string? TransactionId { get; set; }      
+    public string? PaymentMethod { get; set; }      
+    public DateTime? PaidAt { get; set; }   
+    
     public User User { get; set; } = null!;
     public Discount? Discount { get; set; } 
     public ICollection<OrderDetail> OrderItems { get; set; } = new List<OrderDetail>();
