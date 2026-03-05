@@ -1,4 +1,4 @@
-import { statusColors, statusIcons, formatDate } from '../utils/reportHelpers'
+import { statusColors, statusIcons, formatDate } from '../utils/ReportHelpers'
 import AdminPagination from '../../../../components/pagination/AdminPagination'
 
 export default function ReportTable({
