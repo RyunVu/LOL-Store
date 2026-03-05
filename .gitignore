@@ -73,3 +73,22 @@ backend/logs/
 docs/
 Tasks.txt
 ChangeLog/
+
+# ========================================
+# .NET App Settings (secrets)
+# ========================================
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Staging.json
+
+# ========================================
+# .NET User Secrets & Certificates
+# ========================================
+**/*.pfx
+**/*.p12
+**/secrets.json
+
+# ========================================
+# EF Core migrations temp files
+# ========================================
+**/Migrations/*.Designer.cs
